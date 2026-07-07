@@ -16,12 +16,14 @@ Echo Zero supports OAuth 2.1 authorization code with PKCE for clients that canno
 
 User consent is handled in the Dev Portal at `https://devportal.echozero.app/mcp/oauth/authorize`.
 
-## CLI shortcut
+## Browser consent flow
 
-```bash
-npx @echozero/ez login --server https://mcp.echozero.app
-```
+1. Your client redirects the user to `GET https://mcp.echozero.app/oauth/authorize` with PKCE `code_challenge` and `state`.
+2. The user signs in (if needed) and approves access at [devportal.echozero.app/mcp/oauth/authorize](https://devportal.echozero.app/mcp/oauth/authorize).
+3. Echo Zero redirects back to your `redirect_uri` with an authorization `code`.
+4. Exchange the code at `POST https://mcp.echozero.app/oauth/token`.
+5. Call protected routes with `Authorization: Bearer <access_token>`.
 
 <Note>
-Full step-by-step flow (PKCE parameters, token refresh, MCP session headers) will be expanded in a follow-up content PR.
+Full PKCE parameter reference, token refresh, and MCP session header details will be expanded in a follow-up update.
 </Note>

@@ -3,16 +3,16 @@ title: Signal envelope
 description: Structured trade signal events, idempotency keys, and delivery semantics.
 ---
 
-Developer agents accept inbound signals over HTTP webhooks and internal ingestion paths. Signals are normalized into a common envelope before execution.
+Developer agents accept inbound signals over HTTP webhooks and authenticated API routes. Signals are normalized into a common envelope before execution.
 
 ## Event families
 
-The platform supports multiple signal event types (buy, sell, close, update defaults, and related execution triggers). Exact schemas are documented in the [API Reference](/api-reference) under **Trade Signals** and **Webhooks**.
+The platform supports multiple signal event types (buy, sell, close, update defaults, and related execution triggers). Exact schemas are in the **API Reference** sidebar under **Trade Signals** and **Webhooks**.
 
 ## Idempotency
 
 Include a stable idempotency key when posting signals so retries do not create duplicate trades. Your webhook handler should treat duplicate deliveries with the same key as safe no-ops.
 
 <Note>
-The full 10-event-type envelope specification (Task #1098) will be documented here in a follow-up content PR.
+The full event-type catalog and field-by-field envelope reference will be expanded in a follow-up docs update.
 </Note>

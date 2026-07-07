@@ -1,19 +1,103 @@
 ---
 title: Sandbox testing
-description: Test integrations in non-production environments before going live.
+description: Test integrations against the public Echo Zero API without affecting live subscribers or executing real trades.
 ---
 
-Use staging or local mcp-main instances to exercise signal ingestion, wallet flows, and agent configuration without affecting production subscribers.
+External developers test against the **production API host** — there is no separate public staging environment and you do not need access to Echo Zero source code.
 
-## Local development
+**Base URL:** `https://mcp.echozero.app/api`
+
+## 1. Create a developer account and API key
+
+1. Sign in at [devportal.echozero.app](https://devportal.echozero.app).
+2. Register as a developer and create an API key.
+3. Export it locally:
 
 ```bash
-# From echozero-be
-pnpm dev:mcp
+export EZ_API_KEY="ez_live_..."
 ```
 
-Swagger UI is available at `http://localhost:4010/api/docs` when `APP_ENV` is not `production`.
+All examples below send this key as `x-api-key`.
+
+## 2. Dry-run sandbox endpoints
+
+The **Sandbox** API group provides dry-run simulators — they validate ownership and return simulated results with **no real execution**.
+
+### Simulate a trade for your agent
+
+```bash
+curl -sS -X POST "https://mcp.echozero.app/api/sandbox/agents/{agentId}/trade" \
+  -H "x-api-key: $EZ_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "pair": "SOL/USDC",
+    "amount": 100,
+    "action": "BUY"
+  }'
+```
+
+### Simulate signal parsing for a strategy
+
+```bash
+curl -sS -X POST "https://mcp.echozero.app/api/sandbox/strategies/{strategyId}/signals/simulate" \
+  -H "x-api-key: $EZ_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Buy SOL at $145, TP $160, SL $138"
+  }'
+```
+
+### List sandbox signal history
+
+```bash
+curl -sS "https://mcp.echozero.app/api/sandbox/strategies/{strategyId}/signals?page=1&limit=20" \
+  -H "x-api-key: $EZ_API_KEY"
+```
+
+See the **Sandbox** tag in the API Reference sidebar for full request/response schemas.
+
+## 3. Virtual wallet (paper trading)
+
+Switch to virtual wallet mode and add simulated funds before testing buy/sell flows:
+
+```bash
+# Toggle to virtual mode
+curl -sS -X POST "https://mcp.echozero.app/api/v1/wallet/mode" \
+  -H "x-api-key: $EZ_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "isVirtualMode": true }'
+
+# Add virtual SOL balance
+curl -sS -X POST "https://mcp.echozero.app/api/v1/wallet/virtual/add-funds" \
+  -H "x-api-key: $EZ_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "amountInSol": 10 }'
+```
+
+Virtual trades use simulated balances — no on-chain execution.
+
+## 4. Portal demo signals
+
+To record a demo signal row for an agent (isolated from live subscriber execution), use:
+
+```bash
+curl -sS -X POST "https://mcp.echozero.app/api/dev/trade-signals" \
+  -H "x-api-key: $EZ_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "developerAgentId": "{agentId}",
+    "action": "buy",
+    "tokenAddress": "So11111111111111111111111111111111111111112",
+    "amount": 100
+  }'
+```
+
+Demo signals appear in developer signal history but do not trigger the live trade bridge.
+
+## 5. Dev Portal UI
+
+Many flows (agent setup, signal preview, subscriber analytics) can also be exercised from the [Dev Portal](https://devportal.echozero.app) before you wire up production bots.
 
 <Note>
-Sandbox-specific endpoints, virtual wallet funding, and dev-only payout tools are documented in the API Reference under dev-only tags when running non-production builds.
+Use a dedicated test agent with no real subscribers while iterating. When you are ready for live execution, switch to production webhook or structured signal ingestion paths documented in the Signal envelope and Webhook security guides.
 </Note>

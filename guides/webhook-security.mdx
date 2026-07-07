@@ -3,14 +3,18 @@ title: Webhook security
 description: Verify inbound provider webhooks with shared secrets, HMAC, and replay protection.
 ---
 
-Inbound webhooks (Telegram signal bots, Discord gateways, agent HTTP ingress) must be verified before Echo Zero processes payloads.
+When external services send events **to** Echo Zero (Telegram bots, Discord gateways, or your bot posting to an agent inbound URL), the platform verifies authenticity before processing.
 
-## Practices
+## Inbound to Echo Zero
 
-- **Shared secret headers** — e.g. `X-Telegram-Bot-Api-Secret-Token` when configured for Telegram bots.
-- **HMAC signatures** — validate `x-signature` + `x-timestamp` on agent inbound HTTP URLs.
-- **Replay protection** — reject timestamps outside the allowed drift window and deduplicate by event id.
+- **Telegram** — configure `X-Telegram-Bot-Api-Secret-Token` on your bot webhook when Echo Zero provides a secret.
+- **Agent HTTP ingress** — sign outbound POSTs to your agent's inbound URL with `x-signature` and `x-timestamp` using your API secret (same algorithm as REST HMAC signing).
+- **Replay protection** — Echo Zero rejects requests whose timestamp drifts beyond five minutes and deduplicates by event id.
+
+## Outbound from your service
+
+If **your** server receives webhooks from Echo Zero in the future, apply the same principles: verify signatures, enforce timestamp windows, and treat duplicate event ids as idempotent retries.
 
 <Note>
-Provider-specific verification walkthroughs will be added in a follow-up content PR.
+Provider-specific setup walkthroughs (Telegram, Discord, custom HTTP ingress) will be added in a follow-up update.
 </Note>
