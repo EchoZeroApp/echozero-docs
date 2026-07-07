@@ -1,0 +1,68 @@
+---
+title: MCP Server
+description: Connect AI assistants to Echo Zero via Model Context Protocol (Streamable HTTP).
+---
+
+Echo Zero exposes an [MCP](https://modelcontextprotocol.io/) server so Claude, ChatGPT, Cursor, and other assistants can call tools, read resources, and use prompts on behalf of authenticated users.
+
+<Warning>
+`https://mcp.echozero.app/mcp` is a **JSON-RPC POST endpoint**, not a web page. Opening it in a browser (GET) returns an error. Configure your MCP client to send `POST` requests instead.
+</Warning>
+
+## Endpoints
+
+| Surface | URL | Method |
+| --- | --- | --- |
+| MCP (Streamable HTTP) | `https://mcp.echozero.app/mcp` | `POST` |
+| MCP SSE stream | `https://mcp.echozero.app/mcp/sse` | `GET` (after `initialize`) |
+| End session | `https://mcp.echozero.app/mcp` | `DELETE` |
+| Directory metadata | `https://mcp.echozero.app/public/index.json` | `GET` |
+
+## Authentication
+
+Send the same credentials as REST on every MCP request, including `initialize`:
+
+- `x-api-key: <developer_api_key>`, or
+- `Authorization: Bearer <access_token>` (API key or OAuth token)
+
+See [OAuth 2.1](/guides/oauth) and [API keys + HMAC](/guides/api-keys-hmac).
+
+## Connect a client
+
+1. Set the MCP server URL to `https://mcp.echozero.app/mcp`.
+2. Authenticate with your API key or complete the OAuth flow via the [Dev Portal](https://devportal.echozero.app).
+3. Send `initialize` over `POST /mcp` with `Accept: application/json, text/event-stream`.
+4. On subsequent calls, include the `mcp-session-id` header returned from `initialize`.
+
+### Example `initialize` request
+
+```bash
+curl -sS https://mcp.echozero.app/mcp \
+  -H "x-api-key: $EZ_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "initialize",
+    "params": {
+      "protocolVersion": "2025-03-26",
+      "capabilities": {},
+      "clientInfo": { "name": "my-client", "version": "1.0.0" }
+    }
+  }'
+```
+
+## Tools, resources, and scopes
+
+Available MCP tools, resources, and prompts are **scope-gated** by the API key. Common scopes include `read:agents`, `write:agents`, `read:wallet`, `write:wallet`, `read:strategies`, `write:strategies`, `read:trades`, `read:tokens`, `write:ai`, and `admin:*`.
+
+## Directory integrations
+
+For ChatGPT, Claude, Gemini, and other directory submissions, fetch connector metadata from:
+
+```
+https://mcp.echozero.app/public/index.json
+```
+
+That index links to per-platform manifests under `/public/directory/*`.

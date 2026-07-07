@@ -53,6 +53,7 @@
           {
             "group": "Guides",
             "pages": [
+              "guides/mcp",
               "guides/oauth",
               "guides/api-keys-hmac",
               "guides/signal-envelope",
@@ -73,7 +74,7 @@
       "anchors": [
         {
           "anchor": "MCP Server",
-          "href": "https://mcp.echozero.app/mcp",
+          "href": "/guides/mcp",
           "icon": "server"
         },
         {
