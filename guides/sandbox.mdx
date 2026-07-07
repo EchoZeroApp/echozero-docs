@@ -1,0 +1,19 @@
+---
+title: Sandbox testing
+description: Test integrations in non-production environments before going live.
+---
+
+Use staging or local mcp-main instances to exercise signal ingestion, wallet flows, and agent configuration without affecting production subscribers.
+
+## Local development
+
+```bash
+# From echozero-be
+pnpm dev:mcp
+```
+
+Swagger UI is available at `http://localhost:4010/api/docs` when `APP_ENV` is not `production`.
+
+<Note>
+Sandbox-specific endpoints, virtual wallet funding, and dev-only payout tools are documented in the API Reference under dev-only tags when running non-production builds.
+</Note>

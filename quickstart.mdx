@@ -1,0 +1,64 @@
+---
+title: Quickstart
+description: Authenticate and call the Echo Zero MCP API in minutes.
+---
+
+This quickstart walks through the fastest path from zero to a working API call. Detailed guides for OAuth, HMAC signing, and signal envelopes are linked at the end.
+
+## Prerequisites
+
+- An Echo Zero developer account — sign in at [devportal.echozero.app](https://devportal.echozero.app)
+- An API key **or** OAuth access token (see [OAuth guide](/guides/oauth) and [API keys + HMAC](/guides/api-keys-hmac))
+- `curl` or any HTTP client
+
+## 1. Verify the API is up
+
+```bash
+curl -sS https://mcp.echozero.app/api
+```
+
+You should receive a JSON health response.
+
+## 2. Authenticate a request
+
+Send your API key on every authenticated REST call:
+
+```bash
+export EZ_API_KEY="ez_live_..."
+
+curl -sS https://mcp.echozero.app/api/v1/users/me \
+  -H "x-api-key: $EZ_API_KEY"
+```
+
+OAuth-based clients can send `Authorization: Bearer <access_token>` instead. See the [OAuth guide](/guides/oauth).
+
+## 3. Explore the API reference
+
+Open the [API Reference](/api-reference) tab to browse endpoints, request bodies, and response schemas. The reference is generated from the live OpenAPI spec served by mcp-main.
+
+## 4. Connect via MCP (optional)
+
+For AI assistant integrations, point your MCP client at:
+
+```
+https://mcp.echozero.app/mcp
+```
+
+Use the same API key or OAuth token on MCP `initialize` and subsequent requests. Directory metadata lives at `https://mcp.echozero.app/public/index.json`.
+
+## What's next
+
+<CardGroup cols={2}>
+  <Card title="OAuth 2.1" icon="key" href="/guides/oauth">
+    Authorization code + PKCE for assistant clients.
+  </Card>
+  <Card title="Signal envelope" icon="wave-square" href="/guides/signal-envelope">
+    Event types, idempotency, and delivery semantics.
+  </Card>
+  <Card title="Webhook security" icon="shield" href="/guides/webhook-security">
+    HMAC verification and replay protection.
+  </Card>
+  <Card title="Sandbox" icon="flask" href="/guides/sandbox">
+    Test integrations without production side effects.
+  </Card>
+</CardGroup>

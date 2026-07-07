@@ -1,0 +1,36 @@
+---
+title: Introduction
+description: Build, connect, and operate trading agents on Echo Zero with REST, MCP, and webhooks.
+---
+
+Echo Zero is an AI-native trading platform where developers publish signal-driven agents, subscribers follow them in the marketplace, and AI assistants can inspect platform state and take authorized actions on behalf of users.
+
+Use this documentation to integrate with the Echo Zero MCP API: authenticate, send signals, manage agents, and operate wallets and strategies programmatically.
+
+## What you can build
+
+- **Signal bots** that post structured or natural-language trade signals to Echo Zero agents.
+- **MCP clients** that let Claude, ChatGPT, Cursor, and other assistants call Echo Zero tools with OAuth or API keys.
+- **Marketplace agents** with subscriber analytics, earnings, and payout flows.
+- **Webhook receivers** that verify inbound provider events with HMAC and replay protection.
+
+## Base URLs
+
+| Surface | URL |
+| --- | --- |
+| REST API | `https://mcp.echozero.app/api` |
+| MCP (Streamable HTTP) | `https://mcp.echozero.app/mcp` |
+| OAuth authorize | `https://mcp.echozero.app/oauth/authorize` |
+| OpenAPI spec | `https://mcp.echozero.app/api/docs-json` |
+| Dev Portal | `https://devportal.echozero.app` |
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Connect a client, authenticate, and call your first API endpoint.
+  </Card>
+  <Card title="API Reference" icon="code">
+    Open the **API Reference** tab in the sidebar to browse live OpenAPI endpoints.
+  </Card>
+</CardGroup>

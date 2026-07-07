@@ -1,0 +1,95 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Echo Zero",
+  "colors": {
+    "primary": "#FF5508",
+    "light": "#FF7733",
+    "dark": "#CC4406"
+  },
+  "favicon": "/favicon.svg",
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
+  },
+  "api": {
+    "openapi": "https://mcp.echozero.app/api/docs-json",
+    "playground": {
+      "display": "interactive"
+    },
+    "examples": {
+      "languages": ["curl", "python", "javascript", "typescript", "go"],
+      "defaults": "required",
+      "prefill": true,
+      "autogenerate": true
+    }
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Developers",
+        "href": "https://echozero.app/developers"
+      },
+      {
+        "label": "Dev Portal",
+        "href": "https://devportal.echozero.app"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Open Dev Portal",
+      "href": "https://devportal.echozero.app"
+    }
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": ["index", "quickstart"]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/oauth",
+              "guides/api-keys-hmac",
+              "guides/signal-envelope",
+              "guides/webhook-security",
+              "guides/sandbox",
+              "guides/earnings",
+              "guides/error-codes"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "openapi": "https://mcp.echozero.app/api/docs-json"
+      }
+    ],
+    "global": {
+      "anchors": [
+        {
+          "anchor": "MCP Server",
+          "href": "https://mcp.echozero.app/mcp",
+          "icon": "server"
+        },
+        {
+          "anchor": "GitHub",
+          "href": "https://github.com/EchoZeroApp/echozero",
+          "icon": "github"
+        }
+      ]
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/EchoZeroApp"
+    }
+  },
+  "contextual": {
+    "options": ["copy", "view", "chatgpt", "claude", "perplexity", "cursor"]
+  }
+}

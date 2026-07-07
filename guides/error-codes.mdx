@@ -1,0 +1,25 @@
+---
+title: Error codes
+description: Common API error shapes, HTTP status codes, and retry guidance.
+---
+
+Echo Zero REST responses use a consistent envelope. Successful calls return `{ "success": true, "data": ... }`. Errors return appropriate HTTP status codes with structured error bodies.
+
+## Common statuses
+
+| Status | Meaning |
+| --- | --- |
+| `400` | Validation error or malformed request |
+| `401` | Missing or invalid API key / bearer token |
+| `403` | Authenticated but insufficient scope or permission |
+| `404` | Resource not found |
+| `429` | Rate limit exceeded — check `Retry-After` |
+| `5xx` | Server error — retry with backoff |
+
+## Rate limits
+
+Authenticated requests include `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers. Tiers: free (60 req/min), standard (300 req/min), premium (1000 req/min).
+
+<Note>
+A complete error code catalog mapped to MCP error types will be added in a follow-up content PR.
+</Note>

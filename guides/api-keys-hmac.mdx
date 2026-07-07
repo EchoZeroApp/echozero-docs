@@ -1,0 +1,35 @@
+---
+title: API keys and HMAC signing
+description: Authenticate REST and MCP requests with API keys and optional request signing.
+---
+
+## API key authentication
+
+Send your developer API key on every authenticated request using either header:
+
+```bash
+curl https://mcp.echozero.app/api/v1/users/me \
+  -H "x-api-key: ez_live_..."
+```
+
+```bash
+curl https://mcp.echozero.app/api/v1/users/me \
+  -H "Authorization: Bearer ez_live_..."
+```
+
+Create and revoke keys in the [Dev Portal](https://devportal.echozero.app).
+
+## Optional HMAC signing
+
+For server-to-server integrations, you may sign requests with your API secret:
+
+| Header | Description |
+| --- | --- |
+| `x-signature` | `HMAC-SHA256(secretKey, timestamp + METHOD + path + body)` |
+| `x-timestamp` | Epoch milliseconds; rejected if drift exceeds 5 minutes |
+
+When `x-signature` is omitted, HMAC verification is skipped.
+
+<Note>
+Detailed signing examples per language will be added in a follow-up content PR.
+</Note>

@@ -1,0 +1,27 @@
+---
+title: OAuth 2.1
+description: Authorization code + PKCE for AI assistant and CLI clients.
+---
+
+Echo Zero supports OAuth 2.1 authorization code with PKCE for clients that cannot safely store long-lived API keys (Claude connectors, ChatGPT apps, local CLIs).
+
+## Endpoints
+
+| Step | Method | URL |
+| --- | --- | --- |
+| Authorize | `GET` | `https://mcp.echozero.app/oauth/authorize` |
+| Token | `POST` | `https://mcp.echozero.app/oauth/token` |
+| Introspect | `POST` | `https://mcp.echozero.app/oauth/introspect` |
+| Verify status | `GET` | `https://mcp.echozero.app/status` |
+
+User consent is handled in the Dev Portal at `https://devportal.echozero.app/mcp/oauth/authorize`.
+
+## CLI shortcut
+
+```bash
+npx @echozero/ez login --server https://mcp.echozero.app
+```
+
+<Note>
+Full step-by-step flow (PKCE parameters, token refresh, MCP session headers) will be expanded in a follow-up content PR.
+</Note>
