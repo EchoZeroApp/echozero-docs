@@ -35,12 +35,15 @@ Checklist:
 - [ ] Open a known endpoint (e.g. `GET /api` health) and confirm request/response shapes match mcp-main
 - [ ] API playground shows server URL `https://mcp.echozero.app` (requires mcp-main deploy with OpenAPI `servers` field)
 
-Confirm the spec is public:
+Confirm the spec is public and includes a server URL for Mintlify code samples:
 
 ```bash
-curl -I https://mcp.echozero.app/api/docs-json
-# Expect: HTTP/2 200
+curl -I https://mcp.echozero.app/api/docs-json   # Expect: HTTP/2 200
+curl -sS https://mcp.echozero.app/api/docs-json | python3 -c "import json,sys; print(json.load(sys.stdin).get('servers'))"
+# Expect: [{'url': 'https://mcp.echozero.app', 'description': 'Production'}]
 ```
+
+If `servers` is empty, Mintlify falls back to placeholder `api.example.com` in curl examples.
 
 ## 4. Custom domain (`docs.echozero.app`)
 
