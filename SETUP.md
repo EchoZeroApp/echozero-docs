@@ -20,9 +20,11 @@ git push -u origin main
 ## 2. Mintlify dashboard
 
 1. Sign up at [mintlify.com](https://mintlify.com) (free tier; GitHub sign-in).
-2. **Create new project** → connect `EchoZeroApp/echozero-docs`.
+2. **Create new project** → connect `EchoZeroApp/echozero-docs` for deployments (the docs content repo).
 3. Select the **Starter** template if prompted (this repo already has `docs.json` + MDX pages).
 4. Mintlify will detect `docs.json` and start a preview deploy on push.
+
+**GitHub icon wrong URL?** Sidebar and footer links come from `docs.json` (`EchoZeroApp/echozero-sdk`). The Mintlify **deployment** repo must be `EchoZeroApp/echozero-docs` (dashboard → Settings → GitHub). Redeploy after pushing config changes.
 
 ## 3. Verify the preview build
 

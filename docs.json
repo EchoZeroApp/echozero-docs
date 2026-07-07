@@ -79,7 +79,7 @@
         },
         {
           "anchor": "GitHub",
-          "href": "https://github.com/EchoZeroApp/echozero",
+          "href": "https://github.com/EchoZeroApp/echozero-sdk",
           "icon": "github"
         }
       ]
@@ -87,7 +87,7 @@
   },
   "footer": {
     "socials": {
-      "github": "https://github.com/EchoZeroApp"
+      "github": "https://github.com/EchoZeroApp/echozero-sdk"
     }
   },
   "contextual": {
