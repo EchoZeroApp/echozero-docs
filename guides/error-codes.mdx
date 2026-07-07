@@ -1,25 +1,152 @@
 ---
 title: Error codes
-description: Common API error shapes, HTTP status codes, and retry guidance.
+description: Common API error shapes, HTTP status codes, MCP JSON-RPC errors, and retry guidance.
 ---
 
-Echo Zero REST responses use a consistent envelope. Successful calls return `{ "success": true, "data": ... }`. Errors return appropriate HTTP status codes with structured error bodies.
+Echo Zero REST responses use a consistent envelope. MCP protocol errors use JSON-RPC 2.0 format on `/mcp` routes.
 
-## Common statuses
+## REST response envelope
 
-| Status | Meaning |
+### Success
+
+```json
+{
+  "success": true,
+  "data": { }
+}
+```
+
+Paginated endpoints wrap items in `data` with `meta` (page, limit, total).
+
+### Error
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "UNAUTHORIZED",
+    "message": "Missing or invalid API key"
+  }
+}
+```
+
+The `code` field is derived from the HTTP status:
+
+| HTTP | `error.code` |
 | --- | --- |
-| `400` | Validation error or malformed request |
-| `401` | Missing or invalid API key / bearer token |
-| `403` | Authenticated but insufficient scope or permission |
-| `404` | Resource not found |
-| `429` | Rate limit exceeded — check `Retry-After` |
-| `5xx` | Server error — retry with backoff |
+| 400 | `BAD_REQUEST` |
+| 401 | `UNAUTHORIZED` |
+| 403 | `FORBIDDEN` |
+| 404 | `NOT_FOUND` |
+| 409 | `CONFLICT` |
+| 429 | `TOO_MANY_REQUESTS` |
+| 5xx | `INTERNAL_SERVER_ERROR` |
+
+Validation errors on **400** may include a comma-joined message from field validators.
+
+## Common HTTP statuses
+
+| Status | Meaning | Retry? |
+| --- | --- | --- |
+| `400` | Validation error, malformed JSON, or business rule violation (e.g. nothing to claim) | Fix request — do not retry blindly |
+| `401` | Missing/invalid API key, OAuth token, or HMAC signature | Refresh credentials |
+| `403` | Authenticated but insufficient scope, or MCP session bound to different credential | Check scopes or re-initialize MCP session |
+| `404` | Resource not found, or developer not registered | Verify ids and registration |
+| `409` | Conflict (duplicate resource) | Use idempotency key or fetch existing |
+| `429` | Rate limit exceeded | Retry after `Retry-After` seconds |
+| `5xx` | Server error | Retry with exponential backoff |
+
+## Authentication errors
+
+| Message | Cause |
+| --- | --- |
+| `Missing x-timestamp header` | `x-signature` sent without `x-timestamp` |
+| `Invalid x-timestamp value` | Non-numeric timestamp |
+| `Request timestamp expired (drift exceeds 5 minutes)` | Clock skew on REST HMAC |
+| `Invalid HMAC signature` | Wrong secret, path, method, or body in string-to-sign |
+| `API key does not support HMAC signing` | Key created without a secret |
+
+Inbound agent webhook errors return the same envelope with **401** for invalid `X-EZ-Signature` or clock skew.
 
 ## Rate limits
 
-Authenticated requests include `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers. Tiers: free (60 req/min), standard (300 req/min), premium (1000 req/min).
+Authenticated requests include rate limit headers:
 
-<Note>
-A complete error code catalog mapped to MCP error types will be added in a follow-up update.
-</Note>
+| Header | Description |
+| --- | --- |
+| `X-RateLimit-Limit` | Max requests per 60-second window |
+| `X-RateLimit-Remaining` | Requests left in current window |
+| `X-RateLimit-Reset` | Unix epoch when the window resets |
+| `Retry-After` | Seconds to wait (only on 429) |
+
+### Tiers
+
+| Tier | Limit |
+| --- | --- |
+| `free` | 60 req/min |
+| `standard` | 300 req/min |
+| `premium` | 1000 req/min |
+
+Rate limits apply per API key or OAuth user id.
+
+## MCP JSON-RPC errors
+
+MCP routes (`POST /mcp`, `GET /mcp/sse`) return JSON-RPC errors instead of the REST envelope:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "error": {
+    "code": -32001,
+    "message": "Missing or invalid API key"
+  },
+  "id": null
+}
+```
+
+| JSON-RPC code | HTTP | Meaning |
+| --- | --- | --- |
+| `-32001` | 401 | Unauthorized |
+| `-32002` | 403 | Forbidden (e.g. session/credential mismatch) |
+| `-32003` | 429 | Rate limit exceeded |
+| `-32602` | 400 | Invalid params |
+| `-32603` | 5xx | Internal error |
+| `-32000` | other 4xx | Application error |
+
+### MCP session errors
+
+| Scenario | Code | Fix |
+| --- | --- | --- |
+| Missing `mcp-session-id` after initialize | 400 | Send session header from initialize response |
+| Session created with different API key/token | -32002 | Re-run `initialize` with the same credential |
+| Expired or unknown session | 401 | Re-run `initialize` |
+
+## Signal ingestion outcomes
+
+Inbound signal webhooks return **200** with an `outcome` field even when no trade executes:
+
+| `outcome` | Meaning |
+| --- | --- |
+| `matched` | Signal parsed and accepted for processing |
+| `unmatched` | Parser could not match the message |
+| `skipped` | Intentionally skipped (e.g. non-entry action, eligibility) |
+| `error` | Processing error — check `skipReason` |
+
+Treat `skipped` and `unmatched` as non-retryable unless you change the payload.
+
+## Retry guidance
+
+| Error type | Strategy |
+| --- | --- |
+| 429 | Wait `Retry-After`, then retry |
+| 5xx | Exponential backoff (1s, 2s, 4s, …) with jitter, max 3–5 attempts |
+| Network timeout | Retry with same `idempotencyKey` for signal POSTs |
+| 401 HMAC | Fix signing — do not retry without correction |
+| 400 validation | Fix payload — retries will fail identically |
+
+## Debugging tips
+
+- Compare your string-to-sign against the SDK's `signRestRequest` output for REST HMAC.
+- For inbound webhooks, verify canonical JSON key ordering matches `stableJson` in echozero-sdk.
+- Check `X-RateLimit-Remaining` before bulk operations.
+- Use `GET /status` to verify OAuth tokens without hitting scoped routes.

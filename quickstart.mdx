@@ -32,11 +32,25 @@ curl -sS https://mcp.echozero.app/api/v1/users/me \
 
 OAuth-based clients can send `Authorization: Bearer <access_token>` instead. See the [OAuth guide](/guides/oauth).
 
-## 3. Explore the API reference
+## 3. Create a developer agent (optional)
+
+```bash
+curl -sS -X POST https://mcp.echozero.app/api/v1/developers/agents \
+  -H "x-api-key: $EZ_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "My Test Agent",
+    "signalSourceKind": "webhook"
+  }'
+```
+
+For webhook agents, save `inboundWebhookSigningSecretReveal` from the response — it is shown only once. Use it to sign inbound signals per the [Webhook security guide](/guides/webhook-security).
+
+## 4. Explore the API reference
 
 Open the **API Reference** tab in the sidebar to browse endpoints, request bodies, and response schemas. The reference is generated from the live OpenAPI spec at `https://mcp.echozero.app/api/docs-json`.
 
-## 4. Connect via MCP (optional)
+## 5. Connect via MCP (optional)
 
 For AI assistant integrations, see the [MCP Server guide](/guides/mcp). Your client should `POST` to:
 

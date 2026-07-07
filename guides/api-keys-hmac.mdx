@@ -17,19 +17,127 @@ curl https://mcp.echozero.app/api/v1/users/me \
   -H "Authorization: Bearer ez_live_..."
 ```
 
-Create and revoke keys in the [Dev Portal](https://devportal.echozero.app).
+Create and revoke keys in the [Dev Portal](https://devportal.echozero.app). Each key has scoped permissions — request only the scopes your integration needs.
 
-## Optional HMAC signing
+### Common scopes
 
-For server-to-server integrations, you may sign requests with your API secret:
+| Scope | Typical use |
+| --- | --- |
+| `read:agents` / `write:agents` | Agent CRUD, webhook provisioning |
+| `read:strategies` / `write:strategies` | Strategy configuration |
+| `read:wallet` / `write:wallet` | Balances, virtual mode |
+| `read:trades` | Trade and signal history |
+| `read:earn` | Earnings and claims |
+
+## Optional REST HMAC signing
+
+For server-to-server integrations, sign requests with the **API secret** returned when the key was created. HMAC is **opt-in**: when `x-signature` is omitted, verification is skipped.
 
 | Header | Description |
 | --- | --- |
-| `x-signature` | `HMAC-SHA256(secretKey, timestamp + METHOD + path + body)` |
-| `x-timestamp` | Epoch milliseconds; rejected if drift exceeds 5 minutes |
+| `x-api-key` | Your API key id (`ez_live_...`) |
+| `x-signature` | `HMAC-SHA256(secretKey, stringToSign)` as lowercase hex |
+| `x-timestamp` | Epoch **milliseconds**; rejected if drift exceeds 5 minutes |
 
-When `x-signature` is omitted, HMAC verification is skipped.
+### String to sign
 
-<Note>
-Detailed signing examples per language will be added in a follow-up update.
-</Note>
+```
+stringToSign = timestamp + METHOD + path + body
+```
+
+- `METHOD` — uppercase HTTP verb (`GET`, `POST`, …)
+- `path` — full request path including query string (e.g. `/api/v1/developers/earnings`)
+- `body` — raw JSON string for POST/PUT/PATCH, or empty string when there is no body
+
+<Warning>
+REST HMAC uses **milliseconds** and includes the HTTP method and path. This is **different** from [inbound agent webhook](/guides/webhook-security) signing, which uses **seconds** and canonical JSON only.
+</Warning>
+
+### curl example (GET)
+
+```bash
+API_KEY="ez_live_..."
+SECRET="ezs_..."   # secret shown once at key creation
+TS=$(date +%s%3N)
+PATH="/api/v1/users/me"
+SIG=$(printf '%s' "${TS}GET${PATH}" | openssl dgst -sha256 -hmac "$SECRET" | awk '{print $2}')
+
+curl -sS "https://mcp.echozero.app${PATH}" \
+  -H "x-api-key: $API_KEY" \
+  -H "x-timestamp: $TS" \
+  -H "x-signature: $SIG"
+```
+
+### curl example (POST)
+
+```bash
+API_KEY="ez_live_..."
+SECRET="ezs_..."
+TS=$(date +%s%3N)
+PATH="/api/api-keys"
+BODY='{"name":"HMAC Test Key"}'
+SIG=$(printf '%s' "${TS}POST${PATH}${BODY}" | openssl dgst -sha256 -hmac "$SECRET" | awk '{print $2}')
+
+curl -sS -X POST "https://mcp.echozero.app${PATH}" \
+  -H "x-api-key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "x-timestamp: $TS" \
+  -H "x-signature: $SIG" \
+  -d "$BODY"
+```
+
+### Python (echozero-sdk)
+
+```python
+import os
+from echozero import EchoZeroClient
+
+client = EchoZeroClient(
+    api_key=os.environ["EZ_API_KEY"],
+    hmac_secret_key=os.environ["EZ_SECRET_KEY"],
+)
+me = client.get("/api/v1/users/me", hmac=True)
+print(me)
+```
+
+Pass `hmac=True` on each request to sign it, or omit when HMAC is not needed.
+
+### TypeScript (echozero-sdk)
+
+```typescript
+import { EchoZeroClient } from '@echozero/sdk';
+
+const client = new EchoZeroClient({
+  apiKey: process.env.EZ_API_KEY!,
+  hmacSecretKey: process.env.EZ_SECRET_KEY,
+});
+
+const me = await client.get('/api/v1/users/me', { hmac: true });
+```
+
+Or sign manually with `signRestRequest`:
+
+```typescript
+import { signRestRequest } from '@echozero/sdk';
+
+const headers = await signRestRequest({
+  secretKey: process.env.EZ_SECRET_KEY!,
+  method: 'GET',
+  path: '/api/v1/users/me',
+});
+// headers['x-timestamp'], headers['x-signature']
+```
+
+## HMAC error responses
+
+| Condition | HTTP | Message |
+| --- | --- | --- |
+| `x-signature` present, no `x-timestamp` | 401 | Missing x-timestamp header |
+| Non-numeric timestamp | 401 | Invalid x-timestamp value |
+| Timestamp > 5 min drift | 401 | Request timestamp expired |
+| Wrong signature | 401 | Invalid HMAC signature |
+| Key has no secret | 401 | API key does not support HMAC signing |
+
+## MCP authentication
+
+API keys (with optional HMAC) work on `POST https://mcp.echozero.app/mcp` the same way as REST. Send `x-api-key` or `Authorization: Bearer` on every MCP call, including `initialize`. See the [MCP Server guide](/guides/mcp).

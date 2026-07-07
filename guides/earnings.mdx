@@ -1,18 +1,123 @@
 ---
 title: Earnings and payouts
-description: Marketplace revenue, subscriber fees, and developer payout flows.
+description: Marketplace revenue, subscriber fees, strategy claims, and Stripe Connect payouts.
 ---
 
-Developers earn from marketplace agent subscriptions and related fee splits. Use the developer revenue endpoints to inspect balances, claims, and payout history.
+Developers earn from agent subscriptions, subscriber success fees, and related marketplace revenue splits. Use the developer revenue and claims endpoints to inspect balances, claim earnings, and track payout history.
+
+All routes require developer registration and API key authentication. Optional HMAC signing applies — see [API keys and HMAC](/guides/api-keys-hmac).
+
+## Revenue streams
+
+| Stream | Description | Claim path |
+| --- | --- | --- |
+| **Subscriptions** | Monthly agent subscription revenue (creator share via Stripe Connect) | `POST /v1/developers/claim-subscription-earnings` |
+| **Strategy success fees** | Per-trade success fees from subscriber executions | `POST /v1/developers/claims/agents/{agentId}` or `/claims/all` |
+| **Weekly payouts** | Automated weekly settlement (gross, platform fee, net) | Recorded in payout history — no manual claim |
 
 ## Key endpoints
 
-Browse these tags in the **API Reference** sidebar:
+### Earnings summary
 
-- **Developer dashboard** — subscribers, performance, signal history
-- **Developer** — registration and profile
-- Developer revenue and claims routes under `/api/v1/developers/*`
+```
+GET /api/v1/developers/earnings
+```
 
-<Note>
-The weekly auto-payout flow and claim semantics will be documented in detail in a follow-up update.
-</Note>
+Returns:
+
+- `totals` — lifetime success-fee totals from weekly payouts
+- `byAgent` / `byPeriod` — breakdowns
+- `fromSubscriptions` — subscription ledger with `claimableUsd`
+- `fromTrading.claimableUsd` — claimable strategy success fees
+- `totalClaimableUsd` — combined claimable balance
+
+Check this before claiming.
+
+### Payout history
+
+```
+GET /api/v1/developers/payouts?page=1&limit=20
+```
+
+Paginated weekly payout rows: gross amount, platform fee, net paid.
+
+### Claim subscription earnings
+
+```
+POST /api/v1/developers/claim-subscription-earnings
+```
+
+Marks all `CLAIMABLE` subscription creator earnings as `CLAIMED`. Returns total USD claimed and number of ledger rows updated.
+
+Returns **400** when there is nothing to claim. Call `GET /earnings` first to check `fromSubscriptions.claimableUsd`.
+
+### Strategy success fee claims
+
+```
+GET  /api/v1/developers/claims/strategy-fees     # per-agent claimable summary
+POST /api/v1/developers/claims/agents/{agentId}  # claim one agent
+POST /api/v1/developers/claims/all               # claim all owned agents
+```
+
+Per-agent claims drain success-fee balances (SOL transfer), mark subscription-ledger rows `CLAIMED`, and support legacy bot `feeEarnings`. Capped at `CLAIM_MAX_USD` per agent per call.
+
+Returns **404** if the agent is not found or not owned by the caller.
+
+## Stripe Connect
+
+Paid agent subscriptions route creator share (80%) via Stripe Connect `transfer_data`. Complete onboarding before publishing paid agents.
+
+### Start onboarding
+
+```
+POST /api/v1/developers/stripe-connect/onboarding
+```
+
+Creates a Connect Express account when missing, then returns a hosted onboarding URL. Status updates via Stripe `account.updated` webhooks.
+
+### Check status
+
+```
+GET /api/v1/developers/stripe-connect/summary
+```
+
+Returns Connect account status, USD balances, next payout estimate, lifetime paid payouts, and subscription MRR / churn metrics.
+
+### Dashboard link
+
+```
+POST /api/v1/developers/stripe-connect/dashboard-link
+```
+
+Returns a short-lived URL to the Stripe Express dashboard for tax forms and payout settings.
+
+## Typical workflow
+
+<Steps>
+  <Step title="Register as a developer">
+    Complete developer registration in the [Dev Portal](https://devportal.echozero.app) or via `POST /api/v1/developers/register`.
+  </Step>
+  <Step title="Set up Stripe Connect">
+    Call `POST /stripe-connect/onboarding` and complete the hosted flow before enabling paid subscriptions.
+  </Step>
+  <Step title="Publish agents">
+    Create marketplace agents with subscription pricing. Subscriber payments flow through Connect.
+  </Step>
+  <Step title="Monitor earnings">
+    Poll `GET /v1/developers/earnings` for claimable balances and `GET /payouts` for settlement history.
+  </Step>
+  <Step title="Claim balances">
+    - Subscription ledger: `POST /claim-subscription-earnings`
+    - Strategy success fees: `POST /claims/agents/{agentId}` or `POST /claims/all`
+  </Step>
+</Steps>
+
+## Dashboard analytics
+
+Additional developer dashboard routes (subscribers, performance, signal history) are under the **Developer dashboard** tag in the API Reference. These complement earnings data for operational monitoring.
+
+## Related guides
+
+- [Sandbox testing](/guides/sandbox) — test signal flows without affecting live subscribers
+- [Signal envelope](/guides/signal-envelope) — how signals become executable trades that generate success fees
+- [Error codes](/guides/error-codes) — handling 400/404 claim errors and rate limits

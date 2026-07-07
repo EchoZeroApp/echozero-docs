@@ -3,16 +3,200 @@ title: Signal envelope
 description: Structured trade signal events, idempotency keys, and delivery semantics.
 ---
 
-Developer agents accept inbound signals over HTTP webhooks and authenticated API routes. Signals are normalized into a common envelope before execution.
+Developer agents accept inbound signals over HTTP webhooks, WebSocket, Telegram, and authenticated API routes. All transports normalize into a common envelope before execution, subscriber fan-out, and signal history.
 
-## Event families
+## Inbound endpoint
 
-The platform supports multiple signal event types (buy, sell, close, update defaults, and related execution triggers). Exact schemas are in the **API Reference** sidebar under **Trade Signals** and **Webhooks**.
+For webhook-based agents (`signalSourceKind: webhook`):
+
+```
+POST https://mcp.echozero.app/api/public/agent-signals/{agentId}
+```
+
+Authentication is **per-agent HMAC** (not your developer API key). See [Webhook security](/guides/webhook-security) for signing details.
+
+## Payload modes
+
+Three modes are supported. They are **mutually exclusive** — send one style per request.
+
+| Mode | Trigger | Use when |
+| --- | --- | --- |
+| Natural language | `text` field present | Quick signals parsed like Telegram (`BUY SOL $500 TP 180 SL 165`) |
+| Full schema (#1098) | `eventType` present | Lifecycle trades, perps, SL/TP ladders, feed events |
+| Legacy structured | `action` + `tokenAddress` (no `text` or `eventType`) | Minimal buy/sell backward compatibility |
+
+## Event types
+
+| `eventType` | Category | Executes trades |
+| --- | --- | --- |
+| `buy` | Entry | Yes |
+| `scale_in` | Entry | Yes |
+| `sell` | Lifecycle | Yes (requires `positionRef`) |
+| `partial_sell` | Lifecycle | Yes (requires `positionRef`) |
+| `amend` | Lifecycle | Yes (requires `positionRef`) |
+| `breakeven` | Lifecycle | Yes (requires `positionRef`) |
+| `cancel` | Lifecycle | Yes (requires `positionRef`) |
+| `trade_idea` | Feed-only | No — posts to activity feed |
+| `position_update` | Feed-only | No — posts to activity feed |
+| `trade_review` | Feed-only | No — posts to activity feed |
+
+### Envelope fields (full schema)
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `version` | No | Schema version (currently `1`) |
+| `idempotencyKey` | Yes when `eventType` set | Stable dedupe key, max 128 chars |
+| `clientTimestamp` | No | ISO timestamp; stale market signals (>5 min) rejected |
+| `eventType` | Yes (full schema) | One of the types above |
+| `chain` | No | `solana` (default) or `hyperliquid` |
+| `instrument` | No | `{ tokenAddress }` or `{ market }` / `{ coin }` |
+| `symbol` | No | Display symbol (e.g. `SOL`, `BTC`) |
+| `reasoning` | Yes when `eventType` set | Human-readable rationale |
+| `confidence` | No | 0–1 |
+| `context` | No | Provenance metadata (model, source, etc.) |
+| `expiresAt` | No | Optional TTL ISO timestamp |
+
+### Entry fields (`buy`, `scale_in`)
+
+| Field | Description |
+| --- | --- |
+| `amount` | USD notional (scaled per subscriber server-side) |
+| `side` | `long` or `short` |
+| `tradeType` | `spot`, `perp`, or `virtual` |
+| `leverageX` | Perp leverage override |
+| `orderType` | `market` or `limit` |
+| `entryPrice` / `entryZone` | Entry price or `{ priceLow, priceHigh }` zone |
+| `riskMgmt` | `fixed` or `dynamic` |
+| `triggers` | SL/TP ladder — `slPrice`, `tps[]`, `timeStopMins` |
+
+### Lifecycle fields (`sell`, `partial_sell`, `amend`, `breakeven`, `cancel`)
+
+| Field | Description |
+| --- | --- |
+| `positionRef` | **Required** — `signalId` or original entry `idempotencyKey` |
+| `exitPrice` | Exit price when applicable |
+| `exitReason` | `tp_hit`, `sl_hit`, `time_stop`, `manual`, `ai_decision` |
+| `pnlPct` | Realized or unrealized P&L % |
+| `sellSizePct` | Partial close % (`partial_sell` only, 0–100) |
+| `changes` | Amend payload — `slPrice`, `tps` adjustments |
+
+## Examples
+
+### Natural language
+
+```json
+{
+  "text": "BUY SOL $500 TP 180 SL 165"
+}
+```
+
+### Entry — structured buy
+
+```json
+{
+  "eventType": "buy",
+  "idempotencyKey": "strategy-2026-07-06-001",
+  "chain": "solana",
+  "instrument": { "tokenAddress": "So11111111111111111111111111111111111111112" },
+  "symbol": "SOL",
+  "side": "long",
+  "tradeType": "spot",
+  "amount": 500,
+  "reasoning": "Momentum breakout after reclaiming VWAP with strong relative volume.",
+  "confidence": 0.82,
+  "triggers": {
+    "slPrice": { "value": 165, "targetType": "price" },
+    "tps": [
+      { "label": "TP1", "value": 180, "targetType": "price", "sizePct": 50 },
+      { "label": "TP2", "value": 195, "targetType": "price", "sizePct": 50 }
+    ]
+  },
+  "context": { "source": "strategy-engine", "model": "breakout-v3" }
+}
+```
+
+### Lifecycle — partial sell
+
+```json
+{
+  "eventType": "partial_sell",
+  "idempotencyKey": "partial-2026-07-06-002",
+  "positionRef": "strategy-2026-07-06-001",
+  "sellSizePct": 50,
+  "exitPrice": 180,
+  "exitReason": "tp_hit",
+  "pnlPct": 12.5,
+  "reasoning": "First take-profit target hit; trimming half the position."
+}
+```
+
+### Feed-only — trade idea
+
+```json
+{
+  "eventType": "trade_idea",
+  "idempotencyKey": "idea-2026-07-06-003",
+  "symbol": "BTC",
+  "chain": "hyperliquid",
+  "instrument": { "coin": "BTC" },
+  "side": "long",
+  "reasoning": "Watching $95k reclaim for potential long entry.",
+  "ideaId": "idea-2026-07-06-003"
+}
+```
+
+### Legacy structured
+
+```json
+{
+  "action": "buy",
+  "tokenAddress": "So11111111111111111111111111111111111111112",
+  "amount": 500,
+  "urgency": "medium",
+  "idempotencyKey": "legacy-001"
+}
+```
 
 ## Idempotency
 
-Include a stable idempotency key when posting signals so retries do not create duplicate trades. Your webhook handler should treat duplicate deliveries with the same key as safe no-ops.
+- **Full schema:** `idempotencyKey` is required when `eventType` is set.
+- **Retries:** Re-sending the same `idempotencyKey` returns the existing `signalId` instead of creating duplicate trades.
+- **Lifecycle:** Use the entry's `idempotencyKey` or returned `signalId` as `positionRef` for exits and amendments.
 
-<Note>
-The full event-type catalog and field-by-field envelope reference will be expanded in a follow-up docs update.
-</Note>
+Recommended pattern: prefix keys with your system id and date, e.g. `my-bot-2026-07-06-entry-001`.
+
+## Response
+
+Standard MCP envelope. Typical `data` fields:
+
+| Field | Description |
+| --- | --- |
+| `outcome` | `matched`, `unmatched`, `skipped`, or `error` |
+| `signalId` | Trade signal id when created or reused |
+| `status` | Bridge execution status when applicable |
+| `skipReason` | Why a signal was skipped (e.g. parser unmatched) |
+
+| HTTP | Cause |
+| --- | --- |
+| 401 | Invalid HMAC signature or clock skew |
+| 404 | Unknown agent or agent not eligible for webhook ingress |
+| 400 | Validation error (missing `reasoning`, invalid `eventType`, etc.) |
+
+## Signing secret lifecycle
+
+- **Provision:** Creating an agent with `signalSourceKind: webhook` returns `inboundWebhookSigningSecretReveal` **once** (`ezw_...`).
+- **Rotate:** `PATCH /api/developers/agents/{id}` with `{ "rotateInboundWebhookSigningSecret": true }`.
+- **Discovery:** `GET /api/developers/agents/{id}` returns `inboundSignalsHttpUrl` but never the secret.
+
+## Other transports
+
+| Transport | Auth | Notes |
+| --- | --- | --- |
+| Inbound HTTP webhook | Per-agent HMAC | This guide |
+| WebSocket `/ws/signals` | Developer API key | Same #1098 schema |
+| `POST /api/dev/trade-signals` | Developer API key | Portal sandbox only — no live bridge |
+| Telegram / Discord | Provider webhook secrets | Platform-managed parsing |
+
+## Outbound execution callbacks
+
+When you set `webhookUrl` on an agent, Echo Zero POSTs `signal.execution` events to your server after trade attempts. This is separate from inbound signing — see [Webhook security](/guides/webhook-security).

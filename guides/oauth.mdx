@@ -3,27 +3,155 @@ title: OAuth 2.1
 description: Authorization code + PKCE for AI assistant and CLI clients.
 ---
 
-Echo Zero supports OAuth 2.1 authorization code with PKCE for clients that cannot safely store long-lived API keys (Claude connectors, ChatGPT apps, local CLIs).
+Echo Zero supports OAuth 2.1 authorization code with PKCE for clients that cannot safely store long-lived API keys — Claude connectors, ChatGPT apps, local CLIs, and directory integrations.
 
 ## Endpoints
 
 | Step | Method | URL |
 | --- | --- | --- |
+| Client lookup | `GET` | `https://mcp.echozero.app/oauth/client` |
 | Authorize | `GET` | `https://mcp.echozero.app/oauth/authorize` |
+| Approve (Dev Portal) | `POST` | `https://mcp.echozero.app/oauth/authorize/approve` |
 | Token | `POST` | `https://mcp.echozero.app/oauth/token` |
 | Introspect | `POST` | `https://mcp.echozero.app/oauth/introspect` |
 | Verify status | `GET` | `https://mcp.echozero.app/status` |
 
-User consent is handled in the Dev Portal at `https://devportal.echozero.app/mcp/oauth/authorize`.
+User consent is handled in the Dev Portal at [devportal.echozero.app/mcp/oauth/authorize](https://devportal.echozero.app/mcp/oauth/authorize). Users approve from their saved portal session — do not ask them to copy JWTs from browser devtools.
+
+## PKCE parameters
+
+| Parameter | Required | Value |
+| --- | --- | --- |
+| `response_type` | Yes | `code` |
+| `client_id` | Yes | Registered client id (e.g. `echozero-cli`) |
+| `redirect_uri` | Yes | Must match a registered redirect URI exactly |
+| `scope` | Yes | Space-delimited OAuth scopes (see below) |
+| `state` | Yes | Opaque CSRF token — validate on callback |
+| `code_challenge` | Yes | `BASE64URL(SHA256(code_verifier))` |
+| `code_challenge_method` | Yes | `S256` |
+
+Generate a `code_verifier` (43–128 random characters) and keep it secret until token exchange.
 
 ## Browser consent flow
 
-1. Your client redirects the user to `GET https://mcp.echozero.app/oauth/authorize` with PKCE `code_challenge` and `state`.
-2. The user signs in (if needed) and approves access at [devportal.echozero.app/mcp/oauth/authorize](https://devportal.echozero.app/mcp/oauth/authorize).
-3. Echo Zero redirects back to your `redirect_uri` with an authorization `code`.
-4. Exchange the code at `POST https://mcp.echozero.app/oauth/token`.
-5. Call protected routes with `Authorization: Bearer <access_token>`.
+<Steps>
+  <Step title="Redirect to authorize">
+    Send the user to `GET https://mcp.echozero.app/oauth/authorize` with PKCE `code_challenge`, `state`, `scope`, and `redirect_uri`.
 
-<Note>
-Full PKCE parameter reference, token refresh, and MCP session header details will be expanded in a follow-up update.
-</Note>
+    ```bash
+    # Example authorize URL (build in your app)
+    https://mcp.echozero.app/oauth/authorize\
+      ?response_type=code\
+      &client_id=echozero-cli\
+      &redirect_uri=http://127.0.0.1:8765/callback\
+      &scope=read:agents%20read:wallet\
+      &state=random-csrf-token\
+      &code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM\
+      &code_challenge_method=S256
+    ```
+  </Step>
+  <Step title="User approves in Dev Portal">
+    Echo Zero redirects to the Dev Portal consent page. If the user is not signed in, they authenticate first, then approve the requested scopes.
+  </Step>
+  <Step title="Receive authorization code">
+    Echo Zero redirects back to your `redirect_uri` with `?code=...&state=...`. Verify `state` matches what you sent.
+  </Step>
+  <Step title="Exchange code for token">
+    ```bash
+    curl -sS -X POST https://mcp.echozero.app/oauth/token \
+      -H "Content-Type: application/json" \
+      -d '{
+        "grant_type": "authorization_code",
+        "code": "<authorization_code>",
+        "redirect_uri": "http://127.0.0.1:8765/callback",
+        "client_id": "echozero-cli",
+        "code_verifier": "<your_code_verifier>"
+      }'
+    ```
+
+    Response:
+
+    ```json
+    {
+      "access_token": "ez_oauth_...",
+      "token_type": "Bearer",
+      "expires_in": 3600,
+      "scope": "read:agents read:wallet"
+    }
+    ```
+  </Step>
+  <Step title="Call protected APIs">
+    Send `Authorization: Bearer <access_token>` on REST and MCP requests.
+  </Step>
+</Steps>
+
+## Verify the token
+
+After login, confirm the token is active:
+
+```bash
+curl -sS https://mcp.echozero.app/status \
+  -H "Authorization: Bearer $OAUTH_TOKEN"
+```
+
+For server-side validation without calling user-scoped routes:
+
+```bash
+curl -sS -X POST https://mcp.echozero.app/oauth/introspect \
+  -H "Content-Type: application/json" \
+  -d '{ "token": "'"$OAUTH_TOKEN"'" }'
+```
+
+Returns `{ "active": true, "sub": "...", "client_id": "...", "scope": "...", "exp": ... }` when valid.
+
+## OAuth scopes
+
+Scopes map to API key permissions. Request only what your integration needs:
+
+| Scope | Access |
+| --- | --- |
+| `read:agents` / `write:agents` | List and manage developer agents |
+| `read:strategies` / `write:strategies` | Strategy configuration |
+| `read:wallet` / `write:wallet` | Wallet balances and mode |
+| `read:trades` / `trades:execute` | Trade history and execution |
+| `read:tokens` | Token metadata |
+| `read:earn` | Earnings and claims |
+| `read:analytics` | Dashboard analytics |
+| `read:ai` / `write:ai` | AI chat and tooling |
+| `read:notifications` / `write:notifications` | Notification preferences |
+
+Legacy scope aliases (`agents:read`, `bots:write`, etc.) are also accepted. `admin:*` is not available via OAuth.
+
+## MCP with OAuth
+
+OAuth tokens work on MCP the same way as API keys:
+
+1. `POST https://mcp.echozero.app/mcp` with `Authorization: Bearer <access_token>` on **every** request, including `initialize`.
+2. Save the `mcp-session-id` response header from `initialize`.
+3. Send `mcp-session-id: <session>` on subsequent MCP calls (`tools/list`, `tools/call`, SSE stream, etc.).
+
+<Warning>
+MCP sessions are **bound to the credential** used at `initialize`. Switching API keys or OAuth tokens while reusing the same `mcp-session-id` returns **403** with JSON-RPC error code `-32002`.
+</Warning>
+
+See the [MCP Server guide](/guides/mcp) for a full `initialize` example.
+
+## Assistant setup shortcut
+
+Install the Echo Zero skills pack — it wires OAuth and MCP for Claude Code, Codex, and OpenClaw:
+
+```bash
+npx skills add EchoZeroApp/skills-draft
+```
+
+Then run `ez login` (included with the skills install) to open Dev Portal consent and save your token locally.
+
+## Directory integrations
+
+For ChatGPT, Claude, Gemini, and other assistant directories, use connector metadata from:
+
+```
+https://mcp.echozero.app/public/index.json
+```
+
+Per-platform manifests live under `/public/directory/*` with authorize URL, token URL, and recommended scope lists.

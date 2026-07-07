@@ -20,21 +20,40 @@ Echo Zero exposes an [MCP](https://modelcontextprotocol.io/) server so Claude, C
 
 ## Authentication
 
-Send the same credentials as REST on every MCP request, including `initialize`:
+Send credentials on **every** MCP request, including the first `initialize`:
 
 - `x-api-key: <developer_api_key>`, or
-- `Authorization: Bearer <access_token>` (API key or OAuth token)
+- `Authorization: Bearer <access_token>` (API key or [OAuth token](/guides/oauth))
 
-See [OAuth 2.1](/guides/oauth) and [API keys + HMAC](/guides/api-keys-hmac).
+Optional REST HMAC headers (`x-signature`, `x-timestamp`) also apply when your API key has a secret. See [API keys + HMAC](/guides/api-keys-hmac).
 
-## Connect a client
+## Session lifecycle
 
-1. Set the MCP server URL to `https://mcp.echozero.app/mcp`.
-2. Authenticate with your API key or complete the OAuth flow via the [Dev Portal](https://devportal.echozero.app).
-3. Send `initialize` over `POST /mcp` with `Accept: application/json, text/event-stream`.
-4. On subsequent calls, include the `mcp-session-id` header returned from `initialize`.
+<Steps>
+  <Step title="Initialize">
+    `POST /mcp` with `method: "initialize"`. Save the `mcp-session-id` response header.
+  </Step>
+  <Step title="Send initialized notification">
+    `POST /mcp` with `method: "notifications/initialized"` and the session header.
+  </Step>
+  <Step title="Call tools / list resources">
+    Include `mcp-session-id: <session>` on all subsequent requests.
+  </Step>
+  <Step title="Optional SSE stream">
+    `GET /mcp/sse` with `Accept: text/event-stream` and the session header for server-push events.
+  </Step>
+  <Step title="End session">
+    `DELETE /mcp` with the session header when done.
+  </Step>
+</Steps>
 
-### Example `initialize` request
+<Warning>
+Sessions are **bound to the credential** used at `initialize`. Using a different API key or OAuth token with the same `mcp-session-id` returns **403** (JSON-RPC `-32002`).
+</Warning>
+
+Response headers may also include `X-Mcp-Instance-Id` for load-balancer sticky routing in multi-instance deployments.
+
+## Example `initialize` request
 
 ```bash
 curl -sS https://mcp.echozero.app/mcp \
@@ -53,16 +72,62 @@ curl -sS https://mcp.echozero.app/mcp \
   }'
 ```
 
+Save `mcp-session-id` from the response headers.
+
+## Example `tools/list`
+
+```bash
+curl -sS https://mcp.echozero.app/mcp \
+  -H "x-api-key: $EZ_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -H "mcp-session-id: $MCP_SESSION_ID" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 2,
+    "method": "tools/list"
+  }'
+```
+
 ## Tools, resources, and scopes
 
-Available MCP tools, resources, and prompts are **scope-gated** by the API key. Common scopes include `read:agents`, `write:agents`, `read:wallet`, `write:wallet`, `read:strategies`, `write:strategies`, `read:trades`, `read:tokens`, `write:ai`, and `admin:*`.
+Available MCP tools, resources, and prompts are **scope-gated** by the API key or OAuth token. Common scopes:
 
-## Directory integrations
+| Scope | Capability |
+| --- | --- |
+| `read:agents` / `write:agents` | Agent management tools |
+| `read:wallet` / `write:wallet` | Wallet and balance tools |
+| `read:strategies` / `write:strategies` | Strategy configuration |
+| `read:trades` | Trade and signal history |
+| `read:tokens` | Token metadata |
+| `write:ai` | AI chat tools |
 
-For ChatGPT, Claude, Gemini, and other directory submissions, fetch connector metadata from:
+Tools forward to the same REST endpoints documented in the API Reference. Errors use JSON-RPC format — see [Error codes](/guides/error-codes).
+
+## OAuth for assistant directories
+
+For ChatGPT, Claude, Gemini, and other directory submissions:
+
+| Setting | Value |
+| --- | --- |
+| MCP URL | `https://mcp.echozero.app/mcp` |
+| Authorize URL | `https://mcp.echozero.app/oauth/authorize` |
+| Token URL | `https://mcp.echozero.app/oauth/token` |
+| Scopes | From `/public/directory/{platform}/` manifests |
+
+Fetch connector metadata:
 
 ```
 https://mcp.echozero.app/public/index.json
 ```
 
-That index links to per-platform manifests under `/public/directory/*`.
+See the [OAuth guide](/guides/oauth) for the full PKCE flow.
+
+## Assistant setup shortcut
+
+```bash
+npx skills add EchoZeroApp/skills-draft
+ez login
+```
+
+Installs Echo Zero skills and runs the PKCE browser flow against `https://mcp.echozero.app`. See the [OAuth guide](/guides/oauth) for manual integration.

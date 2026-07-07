@@ -1,20 +1,150 @@
 ---
 title: Webhook security
-description: Verify inbound provider webhooks with shared secrets, HMAC, and replay protection.
+description: Verify inbound provider webhooks, agent signal ingress, and outbound execution callbacks.
 ---
 
-When external services send events **to** Echo Zero (Telegram bots, Discord gateways, or your bot posting to an agent inbound URL), the platform verifies authenticity before processing.
+Echo Zero uses **three distinct signing schemes** depending on direction and transport. Using the wrong algorithm is the most common integration mistake.
 
-## Inbound to Echo Zero
+| Direction | Headers | Timestamp | Payload signed |
+| --- | --- | --- | --- |
+| REST API (opt-in) | `x-signature`, `x-timestamp` | Epoch **ms** | `timestamp + METHOD + path + body` |
+| Inbound agent signals | `X-EZ-Signature`, `X-EZ-Timestamp` | Epoch **seconds** | `timestamp + "." + canonicalJson` |
+| Outbound `signal.execution` | `x-echozero-signature`, `x-echozero-timestamp` | ISO in payload | `timestamp + "." + jsonBody` |
 
-- **Telegram** — configure `X-Telegram-Bot-Api-Secret-Token` on your bot webhook when Echo Zero provides a secret.
-- **Agent HTTP ingress** — sign outbound POSTs to your agent's inbound URL with `x-signature` and `x-timestamp` using your API secret (same algorithm as REST HMAC signing).
-- **Replay protection** — Echo Zero rejects requests whose timestamp drifts beyond five minutes and deduplicates by event id.
+## Inbound agent HTTP signals
 
-## Outbound from your service
+**Endpoint:** `POST https://mcp.echozero.app/api/public/agent-signals/{agentId}`
 
-If **your** server receives webhooks from Echo Zero in the future, apply the same principles: verify signatures, enforce timestamp windows, and treat duplicate event ids as idempotent retries.
+No developer API key. Authenticate with the per-agent signing secret (`ezw_...`) revealed once at provision or rotation.
 
-<Note>
-Provider-specific setup walkthroughs (Telegram, Discord, custom HTTP ingress) will be added in a follow-up update.
-</Note>
+### Headers
+
+| Header | Required | Description |
+| --- | --- | --- |
+| `Content-Type` | Yes | `application/json` |
+| `X-EZ-Timestamp` | Yes | Unix time in **seconds** |
+| `X-EZ-Signature` | Yes | Lowercase hex HMAC-SHA256 |
+
+### Signing algorithm
+
+1. Serialize the request body as **canonical JSON** — keys sorted alphabetically at every object level, `undefined` fields omitted.
+2. Build: `payloadString = "${unixSeconds}.${canonicalJson}"`
+3. Sign: `HMAC_SHA256(signingSecret, payloadString)` → lowercase hex
+
+```bash
+SECRET='ezw_...'
+TS=$(date +%s)
+CANON='{"text":"BUY SOL 500 USDC"}'
+PAYLOAD="$TS.$CANON"
+SIG=$(printf '%s' "$PAYLOAD" | openssl dgst -sha256 -hmac "$SECRET" | awk '{print $2}')
+
+curl -X POST "https://mcp.echozero.app/api/public/agent-signals/$AGENT_ID" \
+  -H "Content-Type: application/json" \
+  -H "X-EZ-Timestamp: $TS" \
+  -H "X-EZ-Signature: $SIG" \
+  -d '{"text":"BUY SOL 500 USDC"}'
+```
+
+### SDK helpers
+
+The [echozero-sdk](https://github.com/EchoZeroApp/echozero-sdk) provides `signInboundWebhook` / `sign_inbound_webhook` in TypeScript, Python, Go, and Rust with canonical JSON built in.
+
+```typescript
+import { signInboundWebhook } from '@echozero/sdk';
+
+const body = { text: 'BUY SOL 500 USDC' };
+const headers = await signInboundWebhook({
+  signingSecret: process.env.EZW_SECRET!,
+  body,
+});
+// headers['X-EZ-Timestamp'], headers['X-EZ-Signature']
+```
+
+### Replay protection
+
+- Requests with timestamp skew beyond **±5 minutes** are rejected with **401**.
+- Use a unique `idempotencyKey` per signal so retries are safe no-ops.
+
+## Outbound execution webhooks
+
+When your agent has a `webhookUrl`, Echo Zero POSTs execution results after trade attempts:
+
+```json
+{
+  "event": "signal.execution",
+  "signalId": "...",
+  "developerAgentId": "...",
+  "status": "executed",
+  "executionResult": {
+    "success": true,
+    "txHash": "...",
+    "executedAmountUsd": 100,
+    "executedAt": "2026-07-06T12:00:00.000Z"
+  },
+  "timestamp": "2026-07-06T12:00:00.000Z"
+}
+```
+
+### Verify on your server
+
+Headers:
+
+| Header | Description |
+| --- | --- |
+| `x-echozero-timestamp` | Same ISO timestamp as payload `timestamp` field |
+| `x-echozero-signature` | `HMAC_SHA256(webhookSecret, timestamp + "." + rawJsonBody)` |
+
+```python
+import hmac, hashlib
+
+def verify_outbound(secret: str, raw_body: bytes, timestamp: str, signature: str) -> bool:
+    payload = f"{timestamp}.{raw_body.decode()}"
+    expected = hmac.new(secret.encode(), payload.encode(), hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, signature)
+```
+
+Reject requests outside a 5-minute timestamp window and treat duplicate `signalId` deliveries as idempotent.
+
+## Provider webhooks (Telegram, Discord)
+
+When Echo Zero hosts signal ingestion for Telegram or Discord bots, provider-specific secrets apply. These routes do **not** use developer API keys.
+
+### Telegram
+
+**Endpoint:** `POST /api/webhooks/telegram/signal-bot`
+
+When the server has `SIGNAL_TELEGRAM_WEBHOOK_SECRET` configured, every request must include:
+
+```
+X-Telegram-Bot-Api-Secret-Token: <same value passed to Telegram setWebhook secret_token>
+```
+
+Configure this when registering your bot webhook via Telegram's `setWebhook` API.
+
+### Discord
+
+**Endpoint:** `POST /api/webhooks/discord/signal-bot`
+
+When `SIGNAL_DISCORD_WEBHOOK_SECRET` is set:
+
+```
+X-Discord-Signal-Webhook-Secret: <matching secret>
+```
+
+Used when Discord Gateway ingest is off or for webhook-based testing.
+
+## REST API HMAC (developer routes)
+
+For authenticated developer API calls (`/api/v1/*`), optional HMAC uses your **API secret** with millisecond timestamps and method+path signing. See [API keys and HMAC](/guides/api-keys-hmac).
+
+<Warning>
+Do **not** use REST API HMAC headers (`x-signature` / `x-timestamp`) on inbound agent signal POSTs. Agent ingress requires `X-EZ-Signature` / `X-EZ-Timestamp` with the per-agent `ezw_` secret.
+</Warning>
+
+## Security checklist
+
+- Store signing secrets in a secrets manager — they are shown only once at creation/rotation.
+- Use HTTPS for all webhook URLs.
+- Enforce timestamp windows on every inbound webhook you receive.
+- Deduplicate by `idempotencyKey` (inbound) or `signalId` (outbound).
+- Rotate compromised secrets via `rotateInboundWebhookSigningSecret` or API key revocation in the Dev Portal.

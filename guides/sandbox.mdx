@@ -94,10 +94,32 @@ curl -sS -X POST "https://mcp.echozero.app/api/dev/trade-signals" \
 
 Demo signals appear in developer signal history but do not trigger the live trade bridge.
 
-## 5. Dev Portal UI
+## 5. Test inbound webhook signing
+
+Create a webhook agent in the Dev Portal (`signalSourceKind: webhook`). Save the `inboundWebhookSigningSecretReveal` (`ezw_...`) shown once at creation.
+
+Post a signed test signal:
+
+```bash
+AGENT_ID="{agentId}"
+SECRET="ezw_..."
+TS=$(date +%s)
+CANON='{"text":"BUY SOL $100"}'
+SIG=$(printf '%s' "$TS.$CANON" | openssl dgst -sha256 -hmac "$SECRET" | awk '{print $2}')
+
+curl -sS -X POST "https://mcp.echozero.app/api/public/agent-signals/$AGENT_ID" \
+  -H "Content-Type: application/json" \
+  -H "X-EZ-Timestamp: $TS" \
+  -H "X-EZ-Signature: $SIG" \
+  -d '{"text":"BUY SOL $100"}'
+```
+
+Use [virtual wallet mode](#3-virtual-wallet-paper-trading) so execution uses simulated balances. Full signing details are in [Webhook security](/guides/webhook-security).
+
+## 6. Dev Portal UI
 
 Many flows (agent setup, signal preview, subscriber analytics) can also be exercised from the [Dev Portal](https://devportal.echozero.app) before you wire up production bots.
 
 <Note>
-Use a dedicated test agent with no real subscribers while iterating. When you are ready for live execution, switch to production webhook or structured signal ingestion paths documented in the Signal envelope and Webhook security guides.
+Use a dedicated test agent with no real subscribers while iterating. When you are ready for live execution, switch to production webhook or structured signal ingestion paths documented in the [Signal envelope](/guides/signal-envelope) and [Webhook security](/guides/webhook-security) guides.
 </Note>
