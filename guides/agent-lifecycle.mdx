@@ -12,7 +12,7 @@ stateDiagram-v2
   [*] --> pending-review: Create agent
   pending-review --> beta: Admin approve
   pending-review --> rejected: Admin reject
-  beta --> public: Admin promote
+  beta --> public: Admin promote or 30-day auto-promote
   rejected --> [*]
   public --> [*]
 ```
@@ -39,7 +39,9 @@ Platform admins use internal review endpoints to:
 
 1. **Approve** (`pending-review` → `beta`): requires `safetyScore` and notes
 2. **Reject** (`pending-review` → `rejected`): requires rejection notes
-3. **Promote** (`beta` → `public`): moves agent to full marketplace visibility
+3. **Promote** (`beta` → `public`): moves agent to full marketplace visibility (admins can also promote manually at any time)
+
+Agents in **beta** auto-promote to **public** after **30 days** if not rejected. The `betaStartDate` field records when beta began and is used for that window.
 
 As a developer, poll your agent:
 

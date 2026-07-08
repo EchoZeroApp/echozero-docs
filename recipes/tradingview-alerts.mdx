@@ -3,12 +3,7 @@ title: Forward TradingView alerts
 description: Send TradingView webhook alerts to an EchoZero inbound agent URL.
 ---
 
-TradingView cannot sign EchoZero canonical JSON natively. Use a small relay (Cloudflare Worker, AWS Lambda, or your server) that:
-
-1. Receives TradingView's plain JSON POST
-2. Maps fields to EchoZero `text` or structured `eventType: buy`
-3. Signs with your agent's `ezw_` secret
-4. POSTs to `inboundSignalsHttpUrl`
+TradingView cannot sign EchoZero canonical JSON natively. Use a small relay (Cloudflare Worker, AWS Lambda, or your server) that receives TradingView's POST, maps fields to EchoZero, signs with your agent's `ezw_` secret, and forwards to `inboundSignalsHttpUrl`.
 
 ## TradingView alert message (example)
 
@@ -16,19 +11,97 @@ TradingView cannot sign EchoZero canonical JSON natively. Use a small relay (Clo
 BUY {{ticker}} @ {{close}}
 ```
 
-## Relay payload
+Configure the webhook URL to point at your relay, not directly at EchoZero.
 
-```json
-{
-  "text": "BUY SOL $500",
-  "idempotencyKey": "tv-{{timenow}}"
+## Relay (Node.js)
+
+```javascript
+import crypto from 'node:crypto';
+
+const AGENT_ID = process.env.AGENT_ID;
+const EZW_SECRET = process.env.EZW_SECRET;
+const TARGET = `https://mcp.echozero.app/api/public/agent-signals/${AGENT_ID}`;
+
+const STRUCTURED_KEYS = [
+  'action', 'amount', 'chain', 'changes', 'clientTimestamp', 'confidence', 'context',
+  'currentPnlPct', 'entryPrice', 'entryZone', 'eventType', 'exitPrice', 'exitReason',
+  'expiresAt', 'ideaId', 'instrument', 'leverageX', 'metadata', 'orderType', 'pnlPct',
+  'positionRef', 'reasoning', 'relatedTradeId', 'riskMgmt', 'sellSizePct', 'side',
+  'symbol', 'tokenAddress', 'tradeType', 'triggers', 'urgency', 'version',
+];
+
+function stableJson(value) {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`;
+  return `{${Object.keys(value)
+    .sort()
+    .filter((k) => value[k] !== undefined)
+    .map((k) => `${JSON.stringify(k)}:${stableJson(value[k])}`)
+    .join(',')}}`;
+}
+
+function canonicalBody(body) {
+  const out = {};
+  if (body.text !== undefined) out.text = body.text;
+  if (body.idempotencyKey?.trim()) out.idempotencyKey = body.idempotencyKey.trim();
+  for (const key of STRUCTURED_KEYS.sort()) {
+    if (body[key] !== undefined) out[key] = body[key];
+  }
+  return stableJson(out);
+}
+
+function sign(body) {
+  const ts = String(Math.floor(Date.now() / 1000));
+  const canon = canonicalBody(body);
+  const sig = crypto
+    .createHmac('sha256', EZW_SECRET)
+    .update(`${ts}.${canon}`)
+    .digest('hex');
+  return { ts, sig, canon };
+}
+
+export default async function handler(req, res) {
+  const tv = req.body ?? {};
+  const idempotencyKey = `tv-${tv.alert_id ?? tv.timenow ?? Date.now()}`;
+  const text = `BUY ${tv.ticker ?? 'SOL'} $500`;
+
+  const body = { text, idempotencyKey };
+  const { ts, sig } = sign(body);
+
+  const upstream = await fetch(TARGET, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-EZ-Timestamp': ts,
+      'X-EZ-Signature': sig,
+    },
+    body: JSON.stringify(body),
+  });
+
+  res.status(upstream.status).send(await upstream.text());
 }
 ```
 
-## Sign and forward
+## Relay (bash + curl smoke test)
 
-Use [Signature test vectors](/guides/signature-test-vectors) or the SDK `signInboundWebhook` helper.
+```bash
+AGENT_ID="..."
+EZW_SECRET="ezw_..."
+TS=$(date +%s)
+CANON='{"idempotencyKey":"tv-smoke-001","text":"BUY SOL $500"}'
+SIG=$(printf '%s' "$TS.$CANON" | openssl dgst -sha256 -hmac "$EZW_SECRET" | awk '{print $2}')
+
+curl -sS -X POST "https://mcp.echozero.app/api/public/agent-signals/$AGENT_ID" \
+  -H "Content-Type: application/json" \
+  -H "X-EZ-Timestamp: $TS" \
+  -H "X-EZ-Signature: $SIG" \
+  -d '{"text":"BUY SOL $500","idempotencyKey":"tv-smoke-001"}'
+```
+
+## SDK helper (when published)
+
+When `@echozero/sdk` ships to npm, replace manual signing with `signInboundWebhook` from the [SDK guide](/guides/sdk). Until then, use [Signature test vectors](/guides/signature-test-vectors) or the canonicalizer above.
 
 <Warning>
-Always set `idempotencyKey` from TradingView's alert id or timestamp so retries do not double-execute.
+Always set `idempotencyKey` from TradingView's `alert_id` or `timenow` so retries do not double-execute.
 </Warning>

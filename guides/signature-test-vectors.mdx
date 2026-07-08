@@ -66,8 +66,24 @@ Match the SDK implementation: [`inbound_canonical.rs`](https://github.com/EchoZe
 | Raw body | `{"event":"signal.execution","signalId":"sig_1","developerAgentId":"agent_1","status":"executed","timestamp":"2026-07-06T12:00:00.000Z"}` |
 | Payload | `{timestamp}.{raw_body}` |
 | Algorithm | HMAC-SHA256 → lowercase hex |
+| Expected `x-echozero-signature` | `249d84b9e89206f6aee4b124f728c945b805666b3102d76b913a17f1bf568574` |
 
 Verify with the same raw bytes you receive on the wire (do not re-serialize JSON).
+
+## Inbound webhook (nested buy with triggers + context)
+
+| Field | Value |
+| --- | --- |
+| Secret | `test_secret` |
+| Timestamp (s) | `1710000000` |
+| Canonical JSON | see below |
+| Expected `X-EZ-Signature` | `3afa3bf158361edcb46dbeaee6b128f7cd1c78baa28824f2355de1223671e67a` |
+
+```json
+{"amount":500,"chain":"solana","context":{"indicators":["VWAP","RSI"],"marketCondition":"trending","price":148.5},"eventType":"buy","idempotencyKey":"nested-vector-001","instrument":{"tokenAddress":"So11111111111111111111111111111111111111112"},"reasoning":"Nested canonicalization test.","symbol":"SOL","triggers":{"slPrice":{"targetType":"price","value":165},"tps":[{"label":"TP1","sizePct":50,"targetType":"price","value":180}]}}
+```
+
+Nested objects must be sorted at every level (`slPrice` before `tps`; `targetType` before `value` inside each TP). This is where cross-language signing bugs usually appear.
 
 ## curl self-test (REST)
 
