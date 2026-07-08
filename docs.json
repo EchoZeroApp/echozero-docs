@@ -1,7 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Echo Zero",
+  "name": "EchoZero",
   "colors": {
     "primary": "#FF5508",
     "light": "#FF7733",
@@ -11,6 +11,10 @@
   "logo": {
     "light": "/logo/light.svg",
     "dark": "/logo/dark.svg"
+  },
+  "feedback": {
+    "thumbsRating": true,
+    "suggestEdit": true
   },
   "api": {
     "openapi": "https://mcp.echozero.app/api/docs-json",
@@ -33,6 +37,14 @@
       {
         "label": "Dev Portal",
         "href": "https://devportal.echozero.app"
+      },
+      {
+        "label": "Support",
+        "href": "/support"
+      },
+      {
+        "label": "Changelog",
+        "href": "/changelog"
       }
     ],
     "primary": {
@@ -47,21 +59,65 @@
         "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting Started",
-            "pages": ["index", "quickstart"]
+            "group": "Get Started",
+            "pages": [
+              "index",
+              "concepts/how-it-works",
+              "tutorials/first-agent",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Concepts",
+            "pages": [
+              "concepts/objects",
+              "guides/authentication",
+              "guides/earnings"
+            ]
           },
           {
             "group": "Guides",
             "pages": [
+              "guides/signal-envelope",
+              "guides/signal-grammar",
+              "guides/websocket-gateway",
+              "guides/webhook-security",
+              "guides/signature-test-vectors",
+              "guides/sandbox",
+              "guides/agent-lifecycle",
+              "guides/signal-groups",
               "guides/mcp",
+              "mcp/tools",
+              "mcp/resources",
               "guides/oauth",
               "guides/api-keys-hmac",
-              "guides/signal-envelope",
-              "guides/webhook-security",
-              "guides/sandbox",
-              "guides/earnings",
-              "guides/error-codes"
+              "guides/conventions",
+              "guides/error-codes",
+              "guides/versioning"
             ]
+          },
+          {
+            "group": "Recipes",
+            "pages": [
+              "recipes/telegram-relay",
+              "recipes/tradingview-alerts",
+              "recipes/hyperliquid-perp",
+              "recipes/lifecycle-python"
+            ]
+          },
+          {
+            "group": "SDK",
+            "pages": [
+              {
+                "group": "Client libraries",
+                "tag": "Coming soon",
+                "pages": ["guides/sdk"]
+              }
+            ]
+          },
+          {
+            "group": "Legal & support",
+            "pages": ["support", "terms", "changelog"]
           }
         ]
       },
@@ -73,12 +129,17 @@
     "global": {
       "anchors": [
         {
+          "anchor": "OpenAPI spec",
+          "href": "https://mcp.echozero.app/api/docs-json",
+          "icon": "file-code"
+        },
+        {
           "anchor": "MCP Server",
           "href": "/guides/mcp",
           "icon": "server"
         },
         {
-          "anchor": "GitHub",
+          "anchor": "GitHub SDK",
           "href": "https://github.com/EchoZeroApp/echozero-sdk",
           "icon": "github"
         }
@@ -88,7 +149,35 @@
   "footer": {
     "socials": {
       "github": "https://github.com/EchoZeroApp/echozero-sdk"
-    }
+    },
+    "links": [
+      {
+        "header": "Support",
+        "items": [
+          {
+            "label": "developers@echozero.app",
+            "href": "mailto:developers@echozero.app"
+          },
+          {
+            "label": "Status",
+            "href": "https://status.echozero.app"
+          }
+        ]
+      },
+      {
+        "header": "Resources",
+        "items": [
+          {
+            "label": "OpenAPI JSON",
+            "href": "https://mcp.echozero.app/api/docs-json"
+          },
+          {
+            "label": "Developer terms",
+            "href": "/terms"
+          }
+        ]
+      }
+    ]
   },
   "contextual": {
     "options": ["copy", "view", "chatgpt", "claude", "perplexity", "cursor"]

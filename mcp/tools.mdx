@@ -1,0 +1,148 @@
+---
+title: MCP tools reference
+description: Catalog of MCP tools exposed at tools/list, grouped by domain and scope.
+---
+
+EchoZero exposes **70+ MCP tools** plus resources and prompts. Tools forward to the same REST endpoints as the [API Reference](/api-reference). Call `tools/list` after [MCP initialize](/guides/mcp) for the live list scoped to your API key.
+
+## Scope map
+
+| Scope | Tool families |
+| --- | --- |
+| `read:tokens` | Token lookup, trending |
+| `read:trades` | Trade history, quotes |
+| `read:strategies` | Strategy list, templates, performance |
+| `write:strategies` | Create, pause, play, delete strategies |
+| `read:agents` | Agent explore, pins, onboarding |
+| `write:agents` | Create, update, delete, pin, avatar upload |
+| `read:wallet` | Wallet mode, chart, wallet trades |
+| `write:wallet` | Buy, sell, deposit, withdraw, virtual funds |
+| `read:ai` | Chat history, support chats |
+| `write:ai` | AI chat, agent chat, trade confirm/decline |
+| `read:earn` | Leaderboard, rewards, referrals |
+| `read:notifications` | Notification list, counts |
+| `write:notifications` | Mark read, settings |
+| `admin:*` | Admin operations tools (platform operators only) |
+
+## Read tools
+
+| Tool | Description |
+| --- | --- |
+| `get_token` | Token by id or symbol |
+| `get_tokens` | List/search tokens |
+| `get_trending_tokens` | Trending tokens |
+| `get_trades` | User trade history |
+| `search_trade_strategies` | Search strategies on trades |
+| `search_trade_tokens` | Search tokens on trades |
+| `get_strategy` | Strategy by id |
+| `get_strategy_details` | Detailed strategy config |
+| `get_strategy_withdrawals` | Strategy withdrawal history |
+| `get_strategies` | List strategies |
+| `get_strategy_status_counts` | Counts by status |
+| `get_strategy_templates` | Template catalog |
+| `get_strategy_template_detail` | Template detail |
+| `get_strategy_input_snapshot` | Input snapshot for strategy |
+| `get_available_tags` | Strategy tags |
+| `get_strategy_performance` | Performance metrics |
+| `get_strategy_config_summary` | Config summary |
+| `get_platform_fees` | Platform fee schedule |
+| `get_agent` | Agent by id |
+| `get_my_agents` | Owned agents |
+| `get_onboarding_agents` | Onboarding agent list |
+| `get_pinned_agents` | Pinned agents |
+| `get_explore_agents` | Marketplace explore |
+| `get_onboarding_themes` | Onboarding themes |
+| `get_current_user` | Authenticated user profile |
+| `get_subscriptions` | User subscriptions |
+| `get_activations` | Strategy activations |
+| `get_wallet_mode` | Virtual vs live mode |
+| `get_chart_data` | Wallet chart |
+| `search_wallet_trades` | Wallet trade search |
+| `get_notifications` | Notifications |
+| `get_notification_counts` | Unread counts |
+| `get_activities` | Activity list |
+| `search_activity_strategies` | Activity strategy search |
+| `search_activity_tokens` | Activity token search |
+| `get_activity_feed` | Social feed |
+| `get_leaderboard` | Earn leaderboard |
+| `get_rewards` | Earn rewards |
+| `get_referral_link` | Referral link |
+| `get_weekly_progress` | Weekly XP progress |
+| `get_xp_levels` | XP levels |
+| `get_xp_level` | Single XP level |
+| `get_shared_count` | Share counts |
+| `get_agent_chat_history` | Agent chat thread |
+| `get_my_agent_chats` | User agent chats |
+| `list_chat_histories` | AI chat histories |
+| `get_trade_quote` | Trade quote |
+| `get_support_chats` | Support threads |
+| `get_support_chat` | Single support thread |
+
+## Action tools
+
+| Tool | Scope | Notes |
+| --- | --- | --- |
+| `create_strategy` | `write:strategies` | Confirmation required |
+| `pause_strategy` | `write:strategies` | |
+| `play_strategy` | `write:strategies` | |
+| `delete_strategy` | `write:strategies` | Destructive |
+| `stop_all_trades` | `write:strategies` | Destructive |
+| `claim_fees` | `read:earn` | Strategy fees |
+| `claim_subscription_fees` | `read:earn` | Subscription fees |
+| `create_agent` | `write:agents` | |
+| `update_agent` | `write:agents` | |
+| `delete_agent` | `write:agents` | Destructive |
+| `upload_agent_avatar` | `write:agents` | Base64 image |
+| `pin_agent` / `unpin_agent` | `write:agents` | |
+| `ai_chat` | `write:ai` | |
+| `agent_chat` | `write:ai` | |
+| `execute_agent_action` | `write:ai` | |
+| `confirm_trade` / `decline_trade` | `write:ai` | |
+| `refresh_quote` | `write:ai` | |
+| `support_chat` | `write:ai` | |
+| `generate_strategy` | `write:ai` | |
+| `toggle_wallet_mode` | `write:wallet` | |
+| `deposit` / `withdraw` | `write:wallet` | |
+| `buy_tokens` / `sell_tokens` | `write:wallet` | |
+| `add_virtual_funds` | `write:wallet` | Paper trading |
+| `edit_profile` | `write:agents` | User profile |
+| `subscribe_to_agent` | `write:agents` | |
+| `unsubscribe_from_agent` | `write:agents` | |
+| `activate_strategy` / `deactivate_strategy` | `write:strategies` | |
+| `update_strategy_activation` | `write:strategies` | |
+| `mark_read` / `mark_all_read` | `write:notifications` | |
+| `delete_notifications` | `write:notifications` | |
+| `update_settings` | `write:notifications` | |
+| `claim_reward` | `read:earn` | |
+
+## Admin tools (`admin:*` only)
+
+`get_user_details`, `find_users`, `get_revenue_summary`, `get_platform_health`, `get_error_dashboard`, `get_admin_audit_log`, `force_password_reset`, `create_notification_segment`, `flag_developer_agent`, `unflag_developer_agent`, `kyc_override`, `approve_admin_action`
+
+Not available to standard developer API keys.
+
+## Example `tools/call`
+
+```bash
+curl -sS https://mcp.echozero.app/mcp \
+  -H "x-api-key: $EZ_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "mcp-session-id: $MCP_SESSION_ID" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 3,
+    "method": "tools/call",
+    "params": {
+      "name": "get_my_agents",
+      "arguments": {}
+    }
+  }'
+```
+
+## Prompts
+
+Built-in prompts: `analyze_strategy_performance`, `portfolio_overview`, `token_research`, `create_trading_strategy`. Call `prompts/list` and `prompts/get`.
+
+## Resources
+
+Read-only `echozero://` URIs are documented on [MCP Resources](/mcp/resources).

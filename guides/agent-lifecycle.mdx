@@ -1,0 +1,68 @@
+---
+title: Agent lifecycle & listing
+description: From draft to pending-review, beta, and public marketplace listing.
+---
+
+Developer agents move through review states before they can accept live subscriber execution.
+
+## State diagram
+
+```mermaid
+stateDiagram-v2
+  [*] --> pending-review: Create agent
+  pending-review --> beta: Admin approve
+  pending-review --> rejected: Admin reject
+  beta --> public: Admin promote
+  rejected --> [*]
+  public --> [*]
+```
+
+| `betaStatus` | Signals accepted? | Marketplace visible? |
+| --- | --- | --- |
+| `pending-review` | No | No |
+| `beta` | Yes | Yes (beta listing) |
+| `public` | Yes | Yes (full listing) |
+| `rejected` | No | No |
+
+## Creating an agent
+
+`POST /api/v1/agents` with your developer API key. New marketplace agents typically start as **`pending-review`**.
+
+Include `signalSourceKind`:
+
+- `webhook` for HTTP ingress (returns `inboundWebhookSigningSecretReveal` once)
+- `signal_group` for Telegram/Discord (see [Signal groups](/guides/signal-groups))
+
+## Review workflow
+
+Platform admins use internal review endpoints to:
+
+1. **Approve** (`pending-review` → `beta`): requires `safetyScore` and notes
+2. **Reject** (`pending-review` → `rejected`): requires rejection notes
+3. **Promote** (`beta` → `public`): moves agent to full marketplace visibility
+
+As a developer, poll your agent:
+
+```bash
+curl -sS "https://mcp.echozero.app/api/v1/agents/$AGENT_ID" \
+  -H "x-api-key: $EZ_API_KEY"
+```
+
+Check `betaStatus`, `betaStartDate`, and `latestReview` on marketplace responses.
+
+## Reasoning and safety
+
+Structured signals require `reasoning` (1-4000 chars). Feed safety filters may reject signals with banned content. Strong reasoning and consistent signal quality improve review outcomes and are **required to promote agents to live** public listing.
+
+## Going live checklist
+
+1. Complete [Stripe Connect onboarding](/guides/earnings) if you charge subscriptions
+2. Set pricing (`pricingModel`, `monthlyPrice`, `successFeePercent`)
+3. Configure ingress (webhook secret or Telegram/Discord verification)
+4. Test in [virtual wallet mode](/guides/sandbox)
+5. Submit for review and wait for `beta` approval
+6. Gather beta feedback, then request promotion to `public`
+
+## Subscriber eligibility
+
+Only **`beta`** and **`public`** agents process executable signals. `pending-review` returns `agent_status_blocked` skip reasons.

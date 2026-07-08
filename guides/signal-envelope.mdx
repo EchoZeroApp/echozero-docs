@@ -15,9 +15,13 @@ POST https://mcp.echozero.app/api/public/agent-signals/{agentId}
 
 Authentication is **per-agent HMAC** (not your developer API key). See [Webhook security](/guides/webhook-security) for signing details.
 
+<Warning>
+**Always send a stable `idempotencyKey` on every signal**, including natural-language `text` and legacy payloads. Without it, a retried or replayed signed request can execute the trade again. Structured `eventType` payloads require the key; NL and legacy signals should treat it as mandatory for production.
+</Warning>
+
 ## Payload modes
 
-Three modes are supported. They are **mutually exclusive** — send one style per request.
+Three modes are supported. They are **mutually exclusive** - send one style per request.
 
 | Mode | Trigger | Use when |
 | --- | --- | --- |
@@ -36,9 +40,9 @@ Three modes are supported. They are **mutually exclusive** — send one style pe
 | `amend` | Lifecycle | Yes (requires `positionRef`) |
 | `breakeven` | Lifecycle | Yes (requires `positionRef`) |
 | `cancel` | Lifecycle | Yes (requires `positionRef`) |
-| `trade_idea` | Feed-only | No — posts to activity feed |
-| `position_update` | Feed-only | No — posts to activity feed |
-| `trade_review` | Feed-only | No — posts to activity feed |
+| `trade_idea` | Feed-only | No - posts to activity feed |
+| `position_update` | Feed-only | No - posts to activity feed |
+| `trade_review` | Feed-only | No - posts to activity feed |
 
 ### Envelope fields (full schema)
 
@@ -51,9 +55,9 @@ Three modes are supported. They are **mutually exclusive** — send one style pe
 | `chain` | No | `solana` (default) or `hyperliquid` |
 | `instrument` | No | `{ tokenAddress }` or `{ market }` / `{ coin }` |
 | `symbol` | No | Display symbol (e.g. `SOL`, `BTC`) |
-| `reasoning` | Yes when `eventType` set | Human-readable rationale |
-| `confidence` | No | 0–1 |
-| `context` | No | Provenance metadata (model, source, etc.) |
+| `reasoning` | Yes when `eventType` set | Human-readable rationale (required for review and live promotion; feed safety filter may reject) |
+| `confidence` | No | 0-1 |
+| `context` | No | Market state: `price`, `indicators[]`, `marketCondition` (shown to subscribers). Provenance keys like `source` / `model` are also accepted |
 | `expiresAt` | No | Optional TTL ISO timestamp |
 
 ### Entry fields (`buy`, `scale_in`)
@@ -67,18 +71,18 @@ Three modes are supported. They are **mutually exclusive** — send one style pe
 | `orderType` | `market` or `limit` |
 | `entryPrice` / `entryZone` | Entry price or `{ priceLow, priceHigh }` zone |
 | `riskMgmt` | `fixed` or `dynamic` |
-| `triggers` | SL/TP ladder — `slPrice`, `tps[]`, `timeStopMins` |
+| `triggers` | SL/TP ladder - `slPrice`, `tps[]`, `timeStopMins` |
 
 ### Lifecycle fields (`sell`, `partial_sell`, `amend`, `breakeven`, `cancel`)
 
 | Field | Description |
 | --- | --- |
-| `positionRef` | **Required** — `signalId` or original entry `idempotencyKey` |
+| `positionRef` | **Required** - `signalId` or original entry `idempotencyKey` |
 | `exitPrice` | Exit price when applicable |
 | `exitReason` | `tp_hit`, `sl_hit`, `time_stop`, `manual`, `ai_decision` |
 | `pnlPct` | Realized or unrealized P&L % |
-| `sellSizePct` | Partial close % (`partial_sell` only, 0–100) |
-| `changes` | Amend payload — `slPrice`, `tps` adjustments |
+| `sellSizePct` | Partial close % (`partial_sell` only, 0-100) |
+| `changes` | Amend payload - `slPrice`, `tps` adjustments |
 
 ## Examples
 
@@ -90,7 +94,7 @@ Three modes are supported. They are **mutually exclusive** — send one style pe
 }
 ```
 
-### Entry — structured buy
+### Entry - structured buy
 
 ```json
 {
@@ -111,11 +115,102 @@ Three modes are supported. They are **mutually exclusive** — send one style pe
       { "label": "TP2", "value": 195, "targetType": "price", "sizePct": 50 }
     ]
   },
-  "context": { "source": "strategy-engine", "model": "breakout-v3" }
+  "context": {
+    "price": 148.5,
+    "indicators": ["VWAP reclaim", "RSI 62"],
+    "marketCondition": "trending",
+    "source": "strategy-engine",
+    "model": "breakout-v3"
+  }
 }
 ```
 
-### Lifecycle — partial sell
+### Scale in
+
+```json
+{
+  "eventType": "scale_in",
+  "idempotencyKey": "scale-2026-07-07-001",
+  "positionRef": "strategy-2026-07-06-001",
+  "amount": 250,
+  "reasoning": "Adding on pullback to VWAP support."
+}
+```
+
+### Sell (full exit)
+
+```json
+{
+  "eventType": "sell",
+  "idempotencyKey": "sell-2026-07-07-002",
+  "positionRef": "strategy-2026-07-06-001",
+  "exitPrice": 195,
+  "exitReason": "manual",
+  "pnlPct": 18.2,
+  "reasoning": "Closing remainder at target zone."
+}
+```
+
+### Amend SL/TP
+
+```json
+{
+  "eventType": "amend",
+  "idempotencyKey": "amend-2026-07-07-003",
+  "positionRef": "strategy-2026-07-06-001",
+  "reasoning": "Trailing stop after TP1 hit.",
+  "changes": {
+    "slPrice": { "from": 165, "to": 175 },
+    "tps": [
+      { "label": "TP2", "value": 210, "targetType": "price", "sizePct": 100 }
+    ]
+  }
+}
+```
+
+### Breakeven
+
+```json
+{
+  "eventType": "breakeven",
+  "idempotencyKey": "be-2026-07-07-004",
+  "positionRef": "strategy-2026-07-06-001",
+  "reasoning": "Move stop to entry after first target."
+}
+```
+
+### Cancel
+
+```json
+{
+  "eventType": "cancel",
+  "idempotencyKey": "cancel-2026-07-07-005",
+  "positionRef": "strategy-2026-07-06-001",
+  "reasoning": "Setup invalidated before fill."
+}
+```
+
+### Perp with leverage
+
+```json
+{
+  "eventType": "buy",
+  "idempotencyKey": "perp-2026-07-07-006",
+  "chain": "hyperliquid",
+  "instrument": { "coin": "ETH" },
+  "tradeType": "perp",
+  "leverageX": 3,
+  "side": "long",
+  "amount": 1000,
+  "reasoning": "ETH perp long on breakout.",
+  "triggers": {
+    "slPrice": { "value": 2, "targetType": "pct" },
+    "tps": [{ "value": 4, "targetType": "pct", "sizePct": 100 }]
+  }
+}
+```
+
+### Lifecycle - partial sell
 
 ```json
 {
@@ -130,7 +225,7 @@ Three modes are supported. They are **mutually exclusive** — send one style pe
 }
 ```
 
-### Feed-only — trade idea
+### Feed-only - trade idea
 
 ```json
 {
@@ -142,6 +237,31 @@ Three modes are supported. They are **mutually exclusive** — send one style pe
   "side": "long",
   "reasoning": "Watching $95k reclaim for potential long entry.",
   "ideaId": "idea-2026-07-06-003"
+}
+```
+
+### Feed-only - position update
+
+```json
+{
+  "eventType": "position_update",
+  "idempotencyKey": "pos-upd-2026-07-07-007",
+  "positionRef": "strategy-2026-07-06-001",
+  "currentPnlPct": 8.4,
+  "reasoning": "Trade running +8.4% unrealized; holding for TP2."
+}
+```
+
+### Feed-only - trade review
+
+```json
+{
+  "eventType": "trade_review",
+  "idempotencyKey": "review-2026-07-07-008",
+  "relatedTradeId": "sig_abc123",
+  "pnlPct": 14.2,
+  "exitReason": "tp_hit",
+  "reasoning": "Closed full position at TP2. Clean breakout follow-through."
 }
 ```
 
@@ -185,8 +305,8 @@ Standard MCP envelope. Typical `data` fields:
 ## Signing secret lifecycle
 
 - **Provision:** Creating an agent with `signalSourceKind: webhook` returns `inboundWebhookSigningSecretReveal` **once** (`ezw_...`).
-- **Rotate:** `PATCH /api/developers/agents/{id}` with `{ "rotateInboundWebhookSigningSecret": true }`.
-- **Discovery:** `GET /api/developers/agents/{id}` returns `inboundSignalsHttpUrl` but never the secret.
+- **Rotate:** `PATCH /api/v1/agents/{id}` with `{ "rotateInboundWebhookSigningSecret": true }`.
+- **Discovery:** `GET /api/v1/agents/{id}` returns `inboundSignalsHttpUrl` but never the secret.
 
 ## Other transports
 
@@ -194,9 +314,9 @@ Standard MCP envelope. Typical `data` fields:
 | --- | --- | --- |
 | Inbound HTTP webhook | Per-agent HMAC | This guide |
 | WebSocket `/ws/signals` | Developer API key | Same #1098 schema |
-| `POST /api/dev/trade-signals` | Developer API key | Portal sandbox only — no live bridge |
+| `POST /api/dev/trade-signals` | Developer API key | Portal sandbox only - no live bridge |
 | Telegram / Discord | Provider webhook secrets | Platform-managed parsing |
 
 ## Outbound execution callbacks
 
-When you set `webhookUrl` on an agent, Echo Zero POSTs `signal.execution` events to your server after trade attempts. This is separate from inbound signing — see [Webhook security](/guides/webhook-security).
+When you set `webhookUrl` on an agent, EchoZero POSTs `signal.execution` events to your server after trade attempts. This is separate from inbound signing - see [Webhook security](/guides/webhook-security).

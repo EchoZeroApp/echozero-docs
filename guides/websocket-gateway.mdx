@@ -1,0 +1,68 @@
+---
+title: WebSocket signal gateway
+description: Stream signals over Socket.IO with your developer API key.
+---
+
+The WebSocket gateway lets your engine push signals with lower latency than HTTP webhooks. It uses the **same JSON schema** as inbound webhooks and the developer API.
+
+## Endpoint
+
+```
+wss://mcp.echozero.app/ws/signals
+```
+
+Socket.IO namespace: `/ws/signals`
+
+## Authentication
+
+Pass your developer API key in the Socket.IO handshake:
+
+- Header: `x-api-key: ez_live_...`, or
+- Auth payload: `{ "apiKey": "ez_live_..." }`
+
+Connection-level HMAC is **not** used on WebSocket (unlike optional REST request signing). Protect the API key in transit (TLS only).
+
+Invalid or missing keys receive an `error` event and disconnect.
+
+## Send a signal
+
+Emit event `signal` with payload:
+
+```json
+{
+  "developerAgentId": "674a1b2c3d4e5f6789012345",
+  "text": "BUY SOL $100",
+  "idempotencyKey": "ws-entry-001"
+}
+```
+
+Structured `#1098` payloads work the same as [Signal envelope](/guides/signal-envelope) (include `eventType`, `reasoning`, `idempotencyKey`).
+
+## Responses
+
+| Event | Meaning |
+| --- | --- |
+| `signal:ack` | Accepted for processing |
+| `signal:error` | Validation or auth failure |
+
+## Rate limits
+
+Connection inherits your API key rate limit tier (60/300/1000 req/min on REST; burst behavior on WebSocket is enforced server-side). Use `idempotencyKey` on every message.
+
+## Reconnect pattern
+
+1. Reconnect with the same API key
+2. Re-send unacknowledged signals with the **same** `idempotencyKey`
+3. Do not assume ordering across reconnects
+
+## vs HTTP webhook
+
+| | WebSocket | Webhook |
+| --- | --- | --- |
+| Auth | API key | Per-agent `ezw_` HMAC |
+| Direction | You connect out | EchoZero POSTs to you (outbound callbacks only) |
+| Schema | Same | Same |
+
+## SDK (coming soon)
+
+The echozero-sdk WebSocket client wraps connect, `signal` emit, and reconnect. See [SDK](/guides/sdk).

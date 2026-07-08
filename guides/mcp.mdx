@@ -1,9 +1,9 @@
 ---
 title: MCP Server
-description: Connect AI assistants to Echo Zero via Model Context Protocol (Streamable HTTP).
+description: Connect AI assistants to EchoZero via Model Context Protocol (Streamable HTTP).
 ---
 
-Echo Zero exposes an [MCP](https://modelcontextprotocol.io/) server so Claude, ChatGPT, Cursor, and other assistants can call tools, read resources, and use prompts on behalf of authenticated users.
+EchoZero exposes an [MCP](https://modelcontextprotocol.io/) server so Claude, ChatGPT, Cursor, and other assistants can call tools, read resources, and use prompts on behalf of authenticated users.
 
 <Warning>
 `https://mcp.echozero.app/mcp` is a **JSON-RPC POST endpoint**, not a web page. Opening it in a browser (GET) returns an error. Configure your MCP client to send `POST` requests instead.
@@ -102,7 +102,7 @@ Available MCP tools, resources, and prompts are **scope-gated** by the API key o
 | `read:tokens` | Token metadata |
 | `write:ai` | AI chat tools |
 
-Tools forward to the same REST endpoints documented in the API Reference. Errors use JSON-RPC format — see [Error codes](/guides/error-codes).
+Tools forward to the same REST endpoints documented in the API Reference. Errors use JSON-RPC format - see [Error codes](/guides/error-codes).
 
 ## OAuth for assistant directories
 
@@ -123,11 +123,14 @@ https://mcp.echozero.app/public/index.json
 
 See the [OAuth guide](/guides/oauth) for the full PKCE flow.
 
-## Assistant setup shortcut
+## Assistant setup (coming soon)
+
+<Note>
+**Coming soon:** `npx skills add EchoZeroApp/skills` and `ez login` are not yet public. Use API keys or [OAuth](/guides/oauth) today.
+</Note>
 
 ```bash
-npx skills add EchoZeroApp/skills-draft
+# When available:
+npx skills add EchoZeroApp/skills
 ez login
 ```
-
-Installs Echo Zero skills and runs the PKCE browser flow against `https://mcp.echozero.app`. See the [OAuth guide](/guides/oauth) for manual integration.

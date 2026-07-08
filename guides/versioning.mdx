@@ -1,0 +1,43 @@
+---
+title: Versioning policy
+description: How EchoZero versions the REST API and announces breaking changes.
+---
+
+## Current version
+
+The public REST API is **`v1`** (`/api/v1/...`). The OpenAPI document version tracks the deployment (`1.0` in `docs-json`).
+
+## Signal schema version
+
+Structured signal envelopes include optional `version` (currently **`1`**, issue `#1098`). New event types and fields are additive within the same major version.
+
+## Change categories
+
+| Type | Policy |
+| --- | --- |
+| **Additive** | New endpoints, optional JSON fields, new enum values: no notice required |
+| **Behavioral** | Execution rule changes: announced in [Changelog](/changelog) |
+| **Breaking** | Removed fields, renamed paths, auth changes: 30-day notice in changelog + email to registered developers |
+
+## What we consider breaking
+
+- Removing or renaming a published `/v1` path
+- Requiring a previously optional field on inbound signals
+- Changing HMAC signing algorithms without a new header/version
+- Tightening default rate limits below published tiers
+
+## What is not breaking
+
+- New `skipReason` or error codes
+- New MCP tools or scopes (existing keys keep working)
+- Internal admin endpoint changes (not in public OpenAPI)
+
+## Staying updated
+
+- [Changelog](/changelog) (dated entries)
+- `GET https://mcp.echozero.app/api/docs-json` (machine-readable)
+- Register in the Dev Portal for operational emails
+
+## MCP protocol version
+
+MCP clients should send `protocolVersion: "2025-03-26"` (or newer supported) in `initialize`. See [MCP Server](/guides/mcp).

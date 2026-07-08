@@ -1,0 +1,83 @@
+---
+title: API conventions
+description: Pagination, response envelopes, idempotency, and rate limits.
+---
+
+## Base URL
+
+```
+https://mcp.echozero.app/api
+```
+
+Download the OpenAPI spec: [https://mcp.echozero.app/api/docs-json](https://mcp.echozero.app/api/docs-json)
+
+## Response envelope
+
+Success:
+
+```json
+{ "success": true, "data": { } }
+```
+
+Paginated lists:
+
+```json
+{
+  "success": true,
+  "data": { "items": [], "meta": { "page": 1, "limit": 25, "total": 100 } }
+}
+```
+
+Errors: see [Error codes](/guides/error-codes).
+
+## Pagination
+
+Query parameters on list endpoints:
+
+| Param | Default | Max | Description |
+| --- | --- | --- | --- |
+| `page` | `1` | - | 1-based page index |
+| `limit` | `25` | `100` | Page size |
+| `order` | `desc` | - | `asc` or `desc` |
+| `orderBy` | `createdAt` | - | Sort field (varies by endpoint) |
+
+Example paging loop:
+
+```bash
+PAGE=1
+while true; do
+  RESP=$(curl -sS "https://mcp.echozero.app/api/v1/trades?page=$PAGE&limit=100" \
+    -H "x-api-key: $EZ_API_KEY")
+  # process RESP.data.items
+  TOTAL=$(echo "$RESP" | jq '.data.meta.total')
+  LIMIT=$(echo "$RESP" | jq '.data.meta.limit')
+  if [ "$((PAGE * LIMIT))" -ge "$TOTAL" ]; then break; fi
+  PAGE=$((PAGE + 1))
+done
+```
+
+## Rate limits
+
+| Tier | Limit |
+| --- | --- |
+| `free` | 60 requests / minute |
+| `standard` | 300 / minute |
+| `premium` | 1000 / minute |
+
+Headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`, `Retry-After` (on 429).
+
+## Idempotency
+
+| Write type | Key |
+| --- | --- |
+| Inbound signals | `idempotencyKey` on every signal (required for structured; **strongly recommended for NL**) |
+| Developer API signals | `idempotencyKey` ≥ 8 chars → stable `sig_api_{agentId}_{key}` |
+| MCP destructive tools | Confirmation flow with TTL |
+
+## Authentication required
+
+Unless documented as public (marketplace browse, inbound webhooks, OAuth authorize), all `/api/v1/*` routes require `x-api-key` or `Authorization: Bearer`.
+
+## Versioning
+
+API paths are prefixed with `/v1/`. See [Versioning policy](/guides/versioning).

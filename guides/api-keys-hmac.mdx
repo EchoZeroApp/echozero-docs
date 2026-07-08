@@ -17,7 +17,7 @@ curl https://mcp.echozero.app/api/v1/users/me \
   -H "Authorization: Bearer ez_live_..."
 ```
 
-Create and revoke keys in the [Dev Portal](https://devportal.echozero.app). Each key has scoped permissions — request only the scopes your integration needs.
+Create and revoke keys in the [Dev Portal](https://devportal.echozero.app). Each key has scoped permissions - request only the scopes your integration needs.
 
 ### Common scopes
 
@@ -45,9 +45,9 @@ For server-to-server integrations, sign requests with the **API secret** returne
 stringToSign = timestamp + METHOD + path + body
 ```
 
-- `METHOD` — uppercase HTTP verb (`GET`, `POST`, …)
-- `path` — full request path including query string (e.g. `/api/v1/developers/earnings`)
-- `body` — raw JSON string for POST/PUT/PATCH, or empty string when there is no body
+- `METHOD` - uppercase HTTP verb (`GET`, `POST`, …)
+- `path` - full request path including query string (e.g. `/api/v1/developers/earnings`)
+- `body` - raw JSON string for POST/PUT/PATCH, or empty string when there is no body
 
 <Warning>
 REST HMAC uses **milliseconds** and includes the HTTP method and path. This is **different** from [inbound agent webhook](/guides/webhook-security) signing, which uses **seconds** and canonical JSON only.
@@ -59,10 +59,10 @@ REST HMAC uses **milliseconds** and includes the HTTP method and path. This is *
 API_KEY="ez_live_..."
 SECRET="ezs_..."   # secret shown once at key creation
 TS=$(date +%s%3N)
-PATH="/api/v1/users/me"
-SIG=$(printf '%s' "${TS}GET${PATH}" | openssl dgst -sha256 -hmac "$SECRET" | awk '{print $2}')
+REQ_PATH="/api/v1/users/me"
+SIG=$(printf '%s' "${TS}GET${REQ_PATH}" | openssl dgst -sha256 -hmac "$SECRET" | awk '{print $2}')
 
-curl -sS "https://mcp.echozero.app${PATH}" \
+curl -sS "https://mcp.echozero.app${REQ_PATH}" \
   -H "x-api-key: $API_KEY" \
   -H "x-timestamp: $TS" \
   -H "x-signature: $SIG"
@@ -74,11 +74,11 @@ curl -sS "https://mcp.echozero.app${PATH}" \
 API_KEY="ez_live_..."
 SECRET="ezs_..."
 TS=$(date +%s%3N)
-PATH="/api/api-keys"
+REQ_PATH="/api/api-keys"
 BODY='{"name":"HMAC Test Key"}'
-SIG=$(printf '%s' "${TS}POST${PATH}${BODY}" | openssl dgst -sha256 -hmac "$SECRET" | awk '{print $2}')
+SIG=$(printf '%s' "${TS}POST${REQ_PATH}${BODY}" | openssl dgst -sha256 -hmac "$SECRET" | awk '{print $2}')
 
-curl -sS -X POST "https://mcp.echozero.app${PATH}" \
+curl -sS -X POST "https://mcp.echozero.app${REQ_PATH}" \
   -H "x-api-key: $API_KEY" \
   -H "Content-Type: application/json" \
   -H "x-timestamp: $TS" \

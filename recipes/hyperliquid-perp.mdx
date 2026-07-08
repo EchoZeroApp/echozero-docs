@@ -1,0 +1,35 @@
+---
+title: Hyperliquid perp with SL/TP ladder
+description: Structured buy signal for a Hyperliquid perpetual with triggers.
+---
+
+```json
+{
+  "eventType": "buy",
+  "idempotencyKey": "hl-perp-2026-07-07-001",
+  "chain": "hyperliquid",
+  "instrument": { "coin": "BTC" },
+  "symbol": "BTC",
+  "side": "long",
+  "tradeType": "perp",
+  "leverageX": 5,
+  "amount": 1000,
+  "reasoning": "Breakout above daily VWAP with funding neutral.",
+  "context": {
+    "price": 94500,
+    "indicators": ["VWAP reclaim", "volume spike"],
+    "marketCondition": "trending"
+  },
+  "triggers": {
+    "slPrice": { "value": 2, "targetType": "pct" },
+    "tps": [
+      { "label": "TP1", "value": 3, "targetType": "pct", "sizePct": 50 },
+      { "label": "TP2", "value": 6, "targetType": "pct", "sizePct": 50 }
+    ]
+  }
+}
+```
+
+Sign with per-agent HMAC and POST to `/api/public/agent-signals/{agentId}`.
+
+Hyperliquid is unavailable in [virtual wallet mode](/guides/sandbox); test lifecycle parsing in sandbox simulate endpoints first.

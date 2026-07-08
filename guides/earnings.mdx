@@ -5,7 +5,44 @@ description: Marketplace revenue, subscriber fees, strategy claims, and Stripe C
 
 Developers earn from agent subscriptions, subscriber success fees, and related marketplace revenue splits. Use the developer revenue and claims endpoints to inspect balances, claim earnings, and track payout history.
 
-All routes require developer registration and API key authentication. Optional HMAC signing applies — see [API keys and HMAC](/guides/api-keys-hmac).
+All routes require developer registration and API key authentication. Optional HMAC signing applies - see [API keys and HMAC](/guides/api-keys-hmac).
+
+## Fee economics
+
+| Stream | Who pays | Rate | Developer share |
+| --- | --- | --- | --- |
+| **Subscription** | Subscriber monthly | You set `monthlyPrice` | **80%** of invoice (platform **20%** via Stripe `application_fee_percent`) |
+| **Success fee** | Subscriber on profitable trades | You set `successFeePercent` on the agent (e.g. 10-20% of trade notional) | **80%** of collected success fee (platform **20%**) |
+| **Both** | Subscribers | Subscription + success fee | Combined per above |
+
+### Worked example: success fee
+
+Subscriber executes a **$10,000** buy. Your agent `successFeePercent` is **15%**.
+
+1. Success fee assessed: $10,000 × 15% = **$1,500**
+2. Platform share (20%): **$300**
+3. Your net success fee: **$1,200** (claimable via strategy-fee claims)
+
+### Worked example: subscription
+
+You set `monthlyPrice: 29`. Ten subscribers pay for one month.
+
+1. Gross: **$290**
+2. Platform fee (20%): **$58**
+3. Creator share via Stripe Connect: **$232**
+
+## Monetization models
+
+Set on agent create/update (`pricingModel`):
+
+| Model | Fields |
+| --- | --- |
+| `subscription` | `monthlyPrice` + Stripe Connect |
+| `success-fee` | `successFeePercent` |
+| `both` | `monthlyPrice` + `successFeePercent` |
+| `free` | No charge |
+
+Set subscription price via agent subscription endpoints or Dev Portal. Stripe Connect onboarding is required before paid subscriptions route creator share.
 
 ## Revenue streams
 
@@ -13,7 +50,7 @@ All routes require developer registration and API key authentication. Optional H
 | --- | --- | --- |
 | **Subscriptions** | Monthly agent subscription revenue (creator share via Stripe Connect) | `POST /v1/developers/claim-subscription-earnings` |
 | **Strategy success fees** | Per-trade success fees from subscriber executions | `POST /v1/developers/claims/agents/{agentId}` or `/claims/all` |
-| **Weekly payouts** | Automated weekly settlement (gross, platform fee, net) | Recorded in payout history — no manual claim |
+| **Weekly payouts** | Automated weekly settlement (gross, platform fee, net) | Recorded in payout history - no manual claim |
 
 ## Key endpoints
 
@@ -25,11 +62,11 @@ GET /api/v1/developers/earnings
 
 Returns:
 
-- `totals` — lifetime success-fee totals from weekly payouts
-- `byAgent` / `byPeriod` — breakdowns
-- `fromSubscriptions` — subscription ledger with `claimableUsd`
-- `fromTrading.claimableUsd` — claimable strategy success fees
-- `totalClaimableUsd` — combined claimable balance
+- `totals` - lifetime success-fee totals from weekly payouts
+- `byAgent` / `byPeriod` - breakdowns
+- `fromSubscriptions` - subscription ledger with `claimableUsd`
+- `fromTrading.claimableUsd` - claimable strategy success fees
+- `totalClaimableUsd` - combined claimable balance
 
 Check this before claiming.
 
@@ -118,6 +155,6 @@ Additional developer dashboard routes (subscribers, performance, signal history)
 
 ## Related guides
 
-- [Sandbox testing](/guides/sandbox) — test signal flows without affecting live subscribers
-- [Signal envelope](/guides/signal-envelope) — how signals become executable trades that generate success fees
-- [Error codes](/guides/error-codes) — handling 400/404 claim errors and rate limits
+- [Sandbox testing](/guides/sandbox) - test signal flows without affecting live subscribers
+- [Signal envelope](/guides/signal-envelope) - how signals become executable trades that generate success fees
+- [Error codes](/guides/error-codes) - handling 400/404 claim errors and rate limits

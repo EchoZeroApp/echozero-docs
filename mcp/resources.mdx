@@ -1,0 +1,45 @@
+---
+title: MCP resources
+description: echozero:// URIs for read-only context in AI assistants.
+---
+
+MCP **resources** expose stable read-only snapshots assistants can fetch without calling action tools. List them with `resources/list` after [MCP initialize](/guides/mcp).
+
+## Resource catalog
+
+| URI | Scope | Content |
+| --- | --- | --- |
+| `echozero://user/profile` | `read:agents` | Authenticated user profile |
+| `echozero://user/subscriptions` | `read:agents` | Agent subscriptions |
+| `echozero://user/activations` | `read:strategies` | Active strategy activations |
+| `echozero://tokens/trending` | `read:tokens` | Trending tokens |
+| `echozero://agents/pinned` | `read:agents` | Pinned agents |
+| `echozero://strategies/status-counts` | `read:strategies` | Strategy status breakdown |
+| `echozero://earn/rewards` | `read:earn` | Earn rewards summary |
+| `echozero://notifications/recent` | `read:notifications` | Recent notifications |
+| `echozero://developer-agents/featured` | `read:agents` | Featured marketplace agents |
+| `echozero://developer-agents/top-performers` | `read:agents` | Top performing agents |
+
+## Example `resources/read`
+
+```bash
+curl -sS https://mcp.echozero.app/mcp \
+  -H "x-api-key: $EZ_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "mcp-session-id: $MCP_SESSION_ID" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 4,
+    "method": "resources/read",
+    "params": { "uri": "echozero://tokens/trending" }
+  }'
+```
+
+Resources return JSON text suitable for model context. They respect the same scopes as the equivalent REST routes.
+
+## Prompts vs resources
+
+- **Resources** = static URI-addressable snapshots
+- **Prompts** = templated multi-step instructions (`prompts/get`)
+
+See [MCP tools](/mcp/tools) for the full tool catalog.

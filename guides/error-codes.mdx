@@ -3,7 +3,7 @@ title: Error codes
 description: Common API error shapes, HTTP status codes, MCP JSON-RPC errors, and retry guidance.
 ---
 
-Echo Zero REST responses use a consistent envelope. MCP protocol errors use JSON-RPC 2.0 format on `/mcp` routes.
+EchoZero REST responses use a consistent envelope. MCP protocol errors use JSON-RPC 2.0 format on `/mcp` routes.
 
 ## REST response envelope
 
@@ -48,7 +48,7 @@ Validation errors on **400** may include a comma-joined message from field valid
 
 | Status | Meaning | Retry? |
 | --- | --- | --- |
-| `400` | Validation error, malformed JSON, or business rule violation (e.g. nothing to claim) | Fix request — do not retry blindly |
+| `400` | Validation error, malformed JSON, or business rule violation (e.g. nothing to claim) | Fix request - do not retry blindly |
 | `401` | Missing/invalid API key, OAuth token, or HMAC signature | Refresh credentials |
 | `403` | Authenticated but insufficient scope, or MCP session bound to different credential | Check scopes or re-initialize MCP session |
 | `404` | Resource not found, or developer not registered | Verify ids and registration |
@@ -130,19 +130,56 @@ Inbound signal webhooks return **200** with an `outcome` field even when no trad
 | `matched` | Signal parsed and accepted for processing |
 | `unmatched` | Parser could not match the message |
 | `skipped` | Intentionally skipped (e.g. non-entry action, eligibility) |
-| `error` | Processing error — check `skipReason` |
+| `error` | Processing error - check `skipReason` |
 
 Treat `skipped` and `unmatched` as non-retryable unless you change the payload.
+
+## Signal validation errors (HTTP 400)
+
+| Error | Cause | Fix |
+| --- | --- | --- |
+| Missing `reasoning` | Structured `eventType` without rationale | Add 1-4000 char `reasoning` |
+| Invalid `eventType` | Unknown enum value | Use documented event types |
+| Missing `positionRef` | Lifecycle event without reference | Set to entry `idempotencyKey` or `signalId` |
+| Stale `clientTimestamp` | Market signal older than 5 min | Use current ISO timestamp |
+| Invalid `instrument` | Missing token/market for chain | Provide `instrument.tokenAddress` or `coin` |
+
+## `skipReason` dictionary (selected)
+
+| `skipReason` | Retryable? | Meaning |
+| --- | --- | --- |
+| `parser_unmatched` | No | NL text did not match grammar |
+| `agent_status_blocked` | No | Agent not `beta`/`public` |
+| `agent_paused` | No | Agent paused |
+| `token_unresolved` | No | Could not map ticker |
+| `token_not_supported` | No | Token not on execution venue |
+| `token_blocked_by_whitelist` | No | Token not on agent whitelist |
+| `non_entry_action` | No | Sell/cancel without open position |
+| `duplicate_request` | No | Idempotency key reused (safe) |
+| `lifecycle_update_no_open_trade_found` | No | `positionRef` not found |
+
+## Execution error tags (in `executionResult.errorMessage`)
+
+| Code | Retryable? | Meaning |
+| --- | --- | --- |
+| `wallet_not_found` | No | Subscriber wallet missing |
+| `subscription_paused` | No | Subscription inactive |
+| `signal_no_amount_set` | No | No USD size configured |
+| `BUY_FAILED` | Maybe | On-chain/venue failure; check details |
+| `hyperliquid_not_available_in_virtual_mode` | No | Use live mode for perps |
+| `sell_not_available_in_virtual_mode` | No | Virtual mode limitation |
+
+Full registry: see `ingestReasons.ts` in the backend.
 
 ## Retry guidance
 
 | Error type | Strategy |
 | --- | --- |
 | 429 | Wait `Retry-After`, then retry |
-| 5xx | Exponential backoff (1s, 2s, 4s, …) with jitter, max 3–5 attempts |
+| 5xx | Exponential backoff (1s, 2s, 4s, …) with jitter, max 3-5 attempts |
 | Network timeout | Retry with same `idempotencyKey` for signal POSTs |
-| 401 HMAC | Fix signing — do not retry without correction |
-| 400 validation | Fix payload — retries will fail identically |
+| 401 HMAC | Fix signing - do not retry without correction |
+| 400 validation | Fix payload - retries will fail identically |
 
 ## Debugging tips
 

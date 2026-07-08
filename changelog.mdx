@@ -1,0 +1,33 @@
+---
+title: Changelog
+description: Dated API and documentation changes for EchoZero developers.
+---
+
+## 2026-07-07
+
+- **Docs:** Production-complete developer documentation launch (concepts, tutorials, MCP catalog, recipes)
+- **Docs:** Public OpenAPI spec excludes admin, cron, and internal webhook surfaces
+- **Docs:** Signature test vectors for REST, inbound, and outbound HMAC
+- **Docs:** Inbound agent signals tag renamed to `Inbound Agent Signals` (no em-dash slug)
+
+## 2026-06-23
+
+- **Signals (#1098):** Full structured signal envelope with 10 `eventType` values, `positionRef` lifecycle, Hyperliquid perps
+- **Inbound webhook:** Per-agent `ezw_` HMAC signing with canonical JSON
+
+## 2026-06-18
+
+- **MCP:** OAuth 2.1 + PKCE for assistant clients
+- **MCP:** Streamable HTTP transport at `/mcp` with session-bound credentials
+- **MCP:** 70+ tools, 10 resources, 4 prompts
+
+## 2026-06-01
+
+- **API v1 baseline:** Agents, strategies, wallet, developer earnings, marketplace browse
+- **Rate limiting:** Tiered limits with `X-RateLimit-*` headers
+
+## Subscribe to updates
+
+Register in the [Dev Portal](https://devportal.echozero.app) and watch [echozero-docs](https://github.com/EchoZeroApp/echozero-docs) on GitHub.
+
+See also [Versioning policy](/guides/versioning).

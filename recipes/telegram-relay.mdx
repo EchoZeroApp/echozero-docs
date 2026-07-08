@@ -1,0 +1,13 @@
+---
+title: Relay a Telegram signal group
+description: Connect a Telegram channel to an EchoZero signal-group agent.
+---
+
+1. Create agent with `signalSourceKind: signal_group` ([tutorial](/tutorials/first-agent))
+2. `GET /api/v1/agents/telegram/bot-metadata` for bot username
+3. Add the EchoZero bot as admin to your channel
+4. `POST /api/v1/agents/{id}/telegram/verify` with `{ "channelUsername": "@YourChannel" }`
+5. Post `BUY SOL $500 TP 180 SL 165` in the channel
+6. Monitor `GET /api/v1/developers/agents/{id}/signals/ingest-log`
+
+See [Signal groups](/guides/signal-groups) and [Signal grammar](/guides/signal-grammar).

@@ -1,0 +1,67 @@
+---
+title: Natural-language signal grammar
+description: Phrases and keywords the EchoZero parser recognizes in text signals.
+---
+
+Natural-language signals (`{ "text": "..." }`) are parsed by the same engine used for Telegram and Discord signal groups. Use this reference when authoring text lines or testing in the [sandbox](/guides/sandbox).
+
+## Entry patterns
+
+| Intent | Example phrases |
+| --- | --- |
+| Buy / long | `BUY SOL`, `LONG $BTC`, `APE WIF`, `entry on SOL` |
+| Sell / exit | `SELL SOL`, `CLOSE`, `EXIT ALL`, `closed fully` |
+| Size | `$500`, `100 USDC`, `500 USD` notional |
+| Take profit | `TP 180`, `TP1: 95.00`, `target 2.10` |
+| Stop loss | `SL 165`, `stop 0.00372` |
+| Leverage | `LEV 5X`, `5x leverage`, `isolated 10x` |
+| Entry zone | `ZONE 140-145`, `BETWEEN 0.21 and 0.22` |
+| Breakout | `BREAKOUT ABOVE 150`, `BREAK BELOW 140` |
+
+## Lifecycle patterns
+
+| Intent | Keywords |
+| --- | --- |
+| Cancel | `CANCEL`, `INVALIDATED`, `ABORT`, `SETUP BROKEN`, `SKIP` |
+| Breakeven | `BREAKEVEN`, `BE`, `MOVE SL TO BE`, `SL TO BE` |
+| Partial close | `TAKE HALF`, `CLOSE 50%`, `TRIM`, `SCALE OUT`, `PARTIAL` |
+| SL hit | `SL HIT`, `STOPPED OUT`, `HIT SL` |
+| Amend SL/TP | `SL updated 165 → 170`, `TP1 retargeted 180` |
+
+## Token resolution
+
+- Tickers: `$SOL`, `SOL`, `WIF` (after entry verbs)
+- Contract: Solana mint address in structured/legacy payloads
+- Unresolved tickers return `token_unresolved` skip reason
+
+## Multi TP ladders
+
+```
+BUY SOL $500 TP1 180 TP2 195 SL 165
+TP3: 92.00 - sell 20%
+```
+
+## Custom keywords
+
+Per-agent `signalDetectionRule` can override buy/sell/TP/SL keyword lists. Test parsing:
+
+```bash
+curl -sS -X POST "https://mcp.echozero.app/api/sandbox/strategies/{strategyId}/signals/simulate" \
+  -H "x-api-key: $EZ_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "message": "BUY SOL at $145, TP $160, SL $138" }'
+```
+
+## Always include idempotency
+
+<Warning>
+Always send a stable `idempotencyKey` with NL text signals. Without it, a retried or replayed signed request can execute twice ([bug #391](https://github.com/EchoZeroApp)).
+</Warning>
+
+```json
+{ "text": "BUY SOL $100", "idempotencyKey": "my-bot-2026-07-07-001" }
+```
+
+## Structured alternative
+
+For production bots, prefer structured `eventType` payloads in [Signal envelope](/guides/signal-envelope) to avoid parser ambiguity.

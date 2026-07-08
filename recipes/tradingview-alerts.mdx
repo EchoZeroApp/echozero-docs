@@ -1,0 +1,34 @@
+---
+title: Forward TradingView alerts
+description: Send TradingView webhook alerts to an EchoZero inbound agent URL.
+---
+
+TradingView cannot sign EchoZero canonical JSON natively. Use a small relay (Cloudflare Worker, AWS Lambda, or your server) that:
+
+1. Receives TradingView's plain JSON POST
+2. Maps fields to EchoZero `text` or structured `eventType: buy`
+3. Signs with your agent's `ezw_` secret
+4. POSTs to `inboundSignalsHttpUrl`
+
+## TradingView alert message (example)
+
+```
+BUY {{ticker}} @ {{close}}
+```
+
+## Relay payload
+
+```json
+{
+  "text": "BUY SOL $500",
+  "idempotencyKey": "tv-{{timenow}}"
+}
+```
+
+## Sign and forward
+
+Use [Signature test vectors](/guides/signature-test-vectors) or the SDK `signInboundWebhook` helper.
+
+<Warning>
+Always set `idempotencyKey` from TradingView's alert id or timestamp so retries do not double-execute.
+</Warning>

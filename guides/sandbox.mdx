@@ -1,9 +1,9 @@
 ---
 title: Sandbox testing
-description: Test integrations against the public Echo Zero API without affecting live subscribers or executing real trades.
+description: Test integrations against the public EchoZero API without affecting live subscribers or executing real trades.
 ---
 
-External developers test against the **production API host** — there is no separate public staging environment and you do not need access to Echo Zero source code.
+External developers test against the **production API host** - there is no separate public staging environment and you do not need access to EchoZero source code.
 
 **Base URL:** `https://mcp.echozero.app/api`
 
@@ -21,7 +21,7 @@ All examples below send this key as `x-api-key`.
 
 ## 2. Dry-run sandbox endpoints
 
-The **Sandbox** API group provides dry-run simulators — they validate ownership and return simulated results with **no real execution**.
+The **Sandbox** API group provides dry-run simulators - they validate ownership and return simulated results with **no real execution**.
 
 ### Simulate a trade for your agent
 
@@ -74,7 +74,7 @@ curl -sS -X POST "https://mcp.echozero.app/api/v1/wallet/virtual/add-funds" \
   -d '{ "amountInSol": 10 }'
 ```
 
-Virtual trades use simulated balances — no on-chain execution.
+Virtual trades use simulated balances - no on-chain execution.
 
 ## 4. Portal demo signals
 

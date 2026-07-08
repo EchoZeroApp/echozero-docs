@@ -1,0 +1,146 @@
+---
+title: Build your first agent
+description: Create a webhook agent, fund a virtual wallet, send a signed signal, and see outcome matched.
+---
+
+This tutorial walks through the full integration path: developer account → webhook agent → virtual wallet → signed signal → lifecycle event.
+
+**Time:** ~15 minutes  
+**Prerequisites:** [Dev Portal](https://devportal.echozero.app) account
+
+## 1. Register and create an API key
+
+Sign in at [devportal.echozero.app](https://devportal.echozero.app), register as a developer, and create an API key. Copy **`ez_live_...`** and **`ezs_...`** immediately (the secret is shown once).
+
+```bash
+export EZ_API_KEY="ez_live_..."
+export EZ_SECRET="ezs_..."
+```
+
+<Check>
+You have a developer API key pair saved locally.
+</Check>
+
+## 2. Create a webhook agent
+
+```bash
+curl -sS -X POST https://mcp.echozero.app/api/v1/agents \
+  -H "x-api-key: $EZ_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Tutorial Webhook Agent",
+    "description": "First integration test",
+    "signalSourceKind": "webhook",
+    "isDraft": false
+  }'
+```
+
+**Expected response (abbreviated):**
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "674a1b2c3d4e5f6789012345",
+    "name": "Tutorial Webhook Agent",
+    "signalSourceKind": "webhook",
+    "betaStatus": "pending-review",
+    "inboundWebhookSigningSecretReveal": "ezw_...",
+    "inboundSignalsHttpUrl": "https://mcp.echozero.app/api/public/agent-signals/674a1b2c3d4e5f6789012345"
+  }
+}
+```
+
+<Warning>
+Save `inboundWebhookSigningSecretReveal` (`ezw_...`) now. It is never returned again. Rotate via `PATCH /api/v1/agents/{id}` with `{ "rotateInboundWebhookSigningSecret": true }` if lost.
+</Warning>
+
+```bash
+export AGENT_ID="<id from response>"
+export EZW_SECRET="<inboundWebhookSigningSecretReveal>"
+```
+
+<Note>
+Signals execute only when `betaStatus` is `beta` or `public`. For sandbox testing, use [virtual wallet mode](#4-enable-virtual-wallet) and the [sandbox endpoints](/guides/sandbox) while your agent is in review, or ask your platform admin to approve the agent to beta.
+</Note>
+
+## 3. Enable virtual wallet
+
+```bash
+curl -sS -X POST https://mcp.echozero.app/api/v1/wallet/mode \
+  -H "x-api-key: $EZ_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "isVirtualMode": true }'
+```
+
+```json
+{ "success": true, "data": { "isVirtualMode": true } }
+```
+
+```bash
+curl -sS -X POST https://mcp.echozero.app/api/v1/wallet/virtual/add-funds \
+  -H "x-api-key: $EZ_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "amountInSol": 10 }'
+```
+
+## 4. Send a signed entry signal
+
+```bash
+TS=$(date +%s)
+CANON='{"text":"BUY SOL $100","idempotencyKey":"tutorial-entry-001"}'
+SIG=$(printf '%s' "$TS.$CANON" | openssl dgst -sha256 -hmac "$EZW_SECRET" | awk '{print $2}')
+
+curl -sS -X POST "https://mcp.echozero.app/api/public/agent-signals/$AGENT_ID" \
+  -H "Content-Type: application/json" \
+  -H "X-EZ-Timestamp: $TS" \
+  -H "X-EZ-Signature: $SIG" \
+  -d '{"text":"BUY SOL $100","idempotencyKey":"tutorial-entry-001"}'
+```
+
+**Expected when agent is beta/public:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "outcome": "matched",
+    "signalId": "sig_...",
+    "status": "..."
+  }
+}
+```
+
+<Check>
+You received `outcome: matched` and a `signalId`. That is the success moment.
+</Check>
+
+If the agent is still `pending-review`, you may see `outcome: skipped` with `skipReason` containing `agent_status_blocked`.
+
+## 5. Send a lifecycle partial sell (optional)
+
+```bash
+TS=$(date +%s)
+CANON='{"eventType":"partial_sell","idempotencyKey":"tutorial-partial-001","positionRef":"tutorial-entry-001","sellSizePct":50,"reasoning":"Taking half off at first target."}'
+SIG=$(printf '%s' "$TS.$CANON" | openssl dgst -sha256 -hmac "$EZW_SECRET" | awk '{print $2}')
+
+curl -sS -X POST "https://mcp.echozero.app/api/public/agent-signals/$AGENT_ID" \
+  -H "Content-Type: application/json" \
+  -H "X-EZ-Timestamp: $TS" \
+  -H "X-EZ-Signature: $SIG" \
+  -d "$CANON"
+```
+
+## 6. Check signal history
+
+```bash
+curl -sS "https://mcp.echozero.app/api/v1/developers/agents/$AGENT_ID/signals/history?page=1&limit=10" \
+  -H "x-api-key: $EZ_API_KEY"
+```
+
+## What's next
+
+- [Signal envelope](/guides/signal-envelope) for all event types
+- [Webhook security](/guides/webhook-security) and [test vectors](/guides/signature-test-vectors)
+- [Earnings](/guides/earnings) when you have subscribers
+- [Agent lifecycle](/guides/agent-lifecycle) to go live on the marketplace

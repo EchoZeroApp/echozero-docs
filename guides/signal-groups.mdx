@@ -1,0 +1,72 @@
+---
+title: Signal groups (Telegram & Discord)
+description: Connect Telegram channels or Discord servers to ingest natural-language signals.
+---
+
+Signal-group agents (`signalSourceKind: signal_group`) are for **Telegram channel** and **Discord server** operators who want EchoZero to parse messages and fan out trades to subscribers.
+
+## Who this is for
+
+- Telegram paid signal groups
+- Discord alpha communities
+- Operators who post natural-language lines like `BUY SOL $500 TP 180 SL 165`
+
+## Setup flow
+
+<Steps>
+  <Step title="Create a signal-group agent">
+    ```bash
+    curl -sS -X POST https://mcp.echozero.app/api/v1/agents \
+      -H "x-api-key: $EZ_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "name": "My TG Signals",
+        "signalSourceKind": "signal_group"
+      }'
+    ```
+  </Step>
+  <Step title="Get bot metadata">
+    ```bash
+    curl -sS https://mcp.echozero.app/api/v1/agents/telegram/bot-metadata \
+      -H "x-api-key: $EZ_API_KEY"
+    ```
+
+    Add the EchoZero bot to your Telegram channel as admin. For Discord:
+
+    ```bash
+    curl -sS https://mcp.echozero.app/api/v1/agents/discord/bot-metadata \
+      -H "x-api-key: $EZ_API_KEY"
+    ```
+  </Step>
+  <Step title="Verify channel connection">
+    **Telegram:** `POST /api/v1/agents/{id}/telegram/verify` with your channel `@username`.
+
+    **Discord:** `GET /api/v1/agents/{id}/discord/oauth-url` → complete OAuth → `POST /api/v1/agents/{id}/discord/verify`.
+  </Step>
+  <Step title="Configure parsing">
+    Set `signalDetectionRule` and optional `signalExecutionDefaults` on the agent via `PATCH /api/v1/agents/{id}`. See [Signal grammar](/guides/signal-grammar).
+  </Step>
+  <Step title="Monitor ingest">
+    `GET /api/v1/developers/agents/{id}/signals/ingest-log` shows parsed lines, match outcomes, and skip reasons.
+  </Step>
+</Steps>
+
+## Natural-language parsing
+
+Messages in connected channels run through the deterministic parser documented in [Signal grammar](/guides/signal-grammar). Matched lines enter the same execution bridge as webhook signals.
+
+## Membership gating
+
+Agents can require subscribers to prove Telegram/Discord membership (`membershipGated`). Execution skips subscribers who fail the channel check.
+
+## vs webhook ingress
+
+| | Signal group | Webhook |
+| --- | --- | --- |
+| Auth | Platform bots | Per-agent `ezw_` HMAC |
+| Payload | NL text in channel | HTTP JSON |
+| Best for | Existing TG/DC communities | Custom bots, TradingView |
+
+## Recipe
+
+See [Relay a Telegram group](/recipes/telegram-relay) for a full walkthrough.

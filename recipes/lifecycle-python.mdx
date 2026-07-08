@@ -1,0 +1,71 @@
+---
+title: Full lifecycle in Python
+description: Entry, partial sell, and cancel with inbound webhook signing.
+---
+
+```python
+import os, time, json, hmac, hashlib, requests
+
+AGENT_ID = os.environ["AGENT_ID"]
+SECRET = os.environ["EZW_SECRET"]
+BASE = "https://mcp.echozero.app/api/public/agent-signals"
+
+STRUCTURED_KEYS = {
+    "action", "amount", "chain", "changes", "clientTimestamp", "confidence",
+    "context", "currentPnlPct", "entryPrice", "entryZone", "eventType",
+    "exitPrice", "exitReason", "expiresAt", "ideaId", "instrument",
+    "leverageX", "metadata", "orderType", "pnlPct", "positionRef",
+    "reasoning", "relatedTradeId", "riskMgmt", "sellSizePct", "side",
+    "symbol", "tokenAddress", "tradeType", "triggers", "urgency", "version",
+}
+
+def canonical_json(body: dict) -> str:
+    out = {}
+    if "text" in body:
+        out["text"] = body["text"]
+    if body.get("idempotencyKey", "").strip():
+        out["idempotencyKey"] = body["idempotencyKey"].strip()
+    for k in sorted(STRUCTURED_KEYS):
+        if k in body:
+            out[k] = body[k]
+    return json.dumps(out, separators=(",", ":"), sort_keys=True)
+
+def sign_and_post(body: dict):
+    ts = str(int(time.time()))
+    canon = canonical_json(body)
+    sig = hmac.new(SECRET.encode(), f"{ts}.{canon}".encode(), hashlib.sha256).hexdigest()
+    return requests.post(
+        f"{BASE}/{AGENT_ID}",
+        headers={
+            "Content-Type": "application/json",
+            "X-EZ-Timestamp": ts,
+            "X-EZ-Signature": sig,
+        },
+        json=body,
+        timeout=30,
+    ).json()
+
+# 1. Entry
+entry = sign_and_post({
+    "eventType": "buy",
+    "idempotencyKey": "py-demo-entry-001",
+    "chain": "solana",
+    "instrument": {"tokenAddress": "So11111111111111111111111111111111111111112"},
+    "symbol": "SOL",
+    "amount": 200,
+    "reasoning": "Python lifecycle demo entry.",
+})
+print("entry", entry)
+
+# 2. Partial sell
+partial = sign_and_post({
+    "eventType": "partial_sell",
+    "idempotencyKey": "py-demo-partial-001",
+    "positionRef": "py-demo-entry-001",
+    "sellSizePct": 50,
+    "reasoning": "Scale out half.",
+})
+print("partial", partial)
+```
+
+When published, use `echozero.sign_inbound_webhook` from the [SDK](/guides/sdk) instead of inline canonicalization.

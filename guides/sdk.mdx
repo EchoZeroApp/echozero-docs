@@ -1,0 +1,69 @@
+---
+title: SDK client libraries
+description: Official TypeScript, Python, Go, and Rust packages for REST, WebSocket, and webhook signing.
+tag: Coming soon
+---
+
+<Note>
+**Coming soon:** Packages are not yet published to npm, PyPI, or crates.io. This page documents the finished SDK spec. Use the REST API and [signature test vectors](/guides/signature-test-vectors) until packages ship.
+</Note>
+
+The [echozero-sdk](https://github.com/EchoZeroApp/echozero-sdk) repo provides clients in **four languages**: TypeScript, Python, Go, and Rust.
+
+## Install (when published)
+
+```bash
+npm install @echozero/sdk
+```
+
+```bash
+pip install echozero
+```
+
+```bash
+go get github.com/EchoZeroApp/echozero-sdk/packages/go/echozero
+```
+
+```toml
+# Cargo.toml
+echozero = { git = "https://github.com/EchoZeroApp/echozero-sdk", package = "echozero" }
+```
+
+## REST client
+
+```typescript
+import { EchoZeroClient } from '@echozero/sdk';
+
+const client = new EchoZeroClient({
+  apiKey: process.env.EZ_API_KEY!,
+  hmacSecretKey: process.env.EZ_SECRET_KEY,
+});
+
+const me = await client.get('/api/v1/users/me', { hmac: true });
+```
+
+```python
+from echozero import EchoZeroClient
+
+client = EchoZeroClient(api_key="ez_live_...", hmac_secret_key="ezs_...")
+me = client.get("/api/v1/users/me", hmac=True)
+```
+
+## Inbound webhook signing
+
+```typescript
+import { signInboundWebhook } from '@echozero/sdk';
+
+const headers = await signInboundWebhook({
+  signingSecret: process.env.EZW_SECRET!,
+  body: { text: 'BUY SOL $100', idempotencyKey: 'key-1' },
+});
+```
+
+## WebSocket signal client
+
+Connect to `wss://mcp.echozero.app/ws/signals` with `x-api-key` in the Socket.IO handshake. Emit `signal` events with the same JSON schema as the inbound webhook.
+
+## Verify outbound webhooks
+
+SDK helpers implement `verifyInboundWebhook` and outbound `signal.execution` verification. Golden vectors are in [Signature test vectors](/guides/signature-test-vectors).

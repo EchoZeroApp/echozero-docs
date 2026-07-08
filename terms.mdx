@@ -1,0 +1,41 @@
+---
+title: Developer terms & responsible use
+description: Risk disclosure and acceptable use for signal providers on EchoZero.
+---
+
+EchoZero is a **custodial, real-money trading platform**. Developers who publish agents and send trade signals must understand subscriber risk and regulatory constraints.
+
+## Your responsibilities
+
+- Signals may execute real trades on subscriber wallets
+- You are responsible for signal accuracy, timeliness, and disclosure
+- Test with [virtual wallet mode](/guides/sandbox) before going live
+- Use [idempotency keys](/guides/signal-envelope) on every signal
+
+## Platform terms
+
+- [Terms of Service](https://mcp.echozero.app/public/terms-of-service.md)
+- [Privacy Policy](https://mcp.echozero.app/public/privacy-policy.md)
+
+## Geographic restrictions
+
+EchoZero blocks access from certain jurisdictions (including US, UK, and Ontario for restricted features). Do not circumvent geo controls or onboard ineligible subscribers.
+
+## Prohibited use
+
+- Market manipulation or pump-and-dump schemes
+- Sharing API keys or signing secrets in client-side code
+- Bypassing review or publishing agents without required disclosures
+- Sending signals without subscriber consent mechanisms required by law
+
+## Risk disclosure for subscribers
+
+Paid agents should clearly state:
+
+- Past performance is not indicative of future results
+- Crypto trading involves total loss risk
+- Success fees and subscriptions are charged per your published pricing
+
+## Contact
+
+Compliance questions: **developers@echozero.app**

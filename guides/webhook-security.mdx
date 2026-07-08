@@ -3,7 +3,7 @@ title: Webhook security
 description: Verify inbound provider webhooks, agent signal ingress, and outbound execution callbacks.
 ---
 
-Echo Zero uses **three distinct signing schemes** depending on direction and transport. Using the wrong algorithm is the most common integration mistake.
+EchoZero uses **three distinct signing schemes** depending on direction and transport. Using the wrong algorithm is the most common integration mistake.
 
 | Direction | Headers | Timestamp | Payload signed |
 | --- | --- | --- | --- |
@@ -17,6 +17,10 @@ Echo Zero uses **three distinct signing schemes** depending on direction and tra
 
 No developer API key. Authenticate with the per-agent signing secret (`ezw_...`) revealed once at provision or rotation.
 
+<Warning>
+**Always send a stable `idempotencyKey` on every inbound signal**, including natural-language `text` and legacy payloads. Without it, a captured or retried signed request can execute the trade again. See [Signal envelope](/guides/signal-envelope).
+</Warning>
+
 ### Headers
 
 | Header | Required | Description |
@@ -27,7 +31,7 @@ No developer API key. Authenticate with the per-agent signing secret (`ezw_...`)
 
 ### Signing algorithm
 
-1. Serialize the request body as **canonical JSON** — keys sorted alphabetically at every object level, `undefined` fields omitted.
+1. Serialize the request body as **canonical JSON** - keys sorted alphabetically at every object level, `undefined` fields omitted.
 2. Build: `payloadString = "${unixSeconds}.${canonicalJson}"`
 3. Sign: `HMAC_SHA256(signingSecret, payloadString)` → lowercase hex
 
@@ -65,9 +69,40 @@ const headers = await signInboundWebhook({
 - Requests with timestamp skew beyond **±5 minutes** are rejected with **401**.
 - Use a unique `idempotencyKey` per signal so retries are safe no-ops.
 
+### Verify inbound (Python)
+
+```python
+import hmac, hashlib, json
+
+def verify_inbound(secret: str, body: dict, timestamp: str, signature: str) -> bool:
+    # Use SDK canonical_json in production; see signature test vectors
+    from echozero.hmac import canonical_webhook_body  # when SDK published
+    canon = json.dumps(body, sort_keys=True, separators=(",", ":"))
+    payload = f"{timestamp}.{canon}"
+    expected = hmac.new(secret.encode(), payload.encode(), hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, signature)
+```
+
+Golden vectors: [Signature test vectors](/guides/signature-test-vectors).
+
 ## Outbound execution webhooks
 
-When your agent has a `webhookUrl`, Echo Zero POSTs execution results after trade attempts:
+When your agent has a `webhookUrl`, EchoZero POSTs execution results after trade attempts.
+
+### Signing secret
+
+Use the **agent webhook signing secret** configured on the agent (`webhookUrl` + secret pair). Rotate by updating the agent record in Dev Portal or `PATCH /api/v1/agents/{id}`.
+
+### Delivery contract
+
+| Property | Value |
+| --- | --- |
+| Method | `POST` |
+| Timeout | **10 seconds** |
+| Retries | **None** (single attempt; implement idempotent handling on your side) |
+| Events | `signal.execution`, `signal.execution.failed` |
+
+### Event catalog
 
 ```json
 {
@@ -107,7 +142,7 @@ Reject requests outside a 5-minute timestamp window and treat duplicate `signalI
 
 ## Provider webhooks (Telegram, Discord)
 
-When Echo Zero hosts signal ingestion for Telegram or Discord bots, provider-specific secrets apply. These routes do **not** use developer API keys.
+When EchoZero hosts signal ingestion for Telegram or Discord bots, provider-specific secrets apply. These routes do **not** use developer API keys.
 
 ### Telegram
 
@@ -143,7 +178,7 @@ Do **not** use REST API HMAC headers (`x-signature` / `x-timestamp`) on inbound 
 
 ## Security checklist
 
-- Store signing secrets in a secrets manager — they are shown only once at creation/rotation.
+- Store signing secrets in a secrets manager - they are shown only once at creation/rotation.
 - Use HTTPS for all webhook URLs.
 - Enforce timestamp windows on every inbound webhook you receive.
 - Deduplicate by `idempotencyKey` (inbound) or `signalId` (outbound).

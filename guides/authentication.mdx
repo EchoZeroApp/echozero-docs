@@ -1,0 +1,63 @@
+---
+title: Authentication overview
+description: Which credential to use for REST, webhooks, MCP, OAuth, and outbound callbacks.
+---
+
+EchoZero uses **five credential types**. Pick the one that matches your integration surface.
+
+## Decision table
+
+| I am building… | Credential | Where to get it |
+| --- | --- | --- |
+| Server REST integration | API key (`ez_live_`) + optional secret (`ezs_`) | [Dev Portal](https://devportal.echozero.app) |
+| AI assistant / MCP client | OAuth bearer token **or** API key | [OAuth flow](/guides/oauth) or Dev Portal |
+| Inbound agent webhook | Per-agent secret (`ezw_`) | Agent create / rotate response |
+| Outbound execution callback | Agent `webhookUrl` signing secret | Agent configuration |
+| End-user session (rare for devs) | User JWT from `/api/auth/*` | Mobile/web app auth, not typical for bots |
+
+## API key + REST HMAC
+
+```bash
+curl https://mcp.echozero.app/api/v1/users/me \
+  -H "x-api-key: ez_live_..."
+```
+
+Optional HMAC for server-to-server hardening. See [API keys + HMAC](/guides/api-keys-hmac).
+
+## OAuth (assistants)
+
+PKCE authorization code flow. Access tokens last **1 hour**. There is **no refresh token** today: re-run the consent flow or use long-lived API keys for headless servers.
+
+## Inbound webhook HMAC
+
+```bash
+X-EZ-Timestamp: <unix_seconds>
+X-EZ-Signature: HMAC_SHA256(ezw_secret, "${ts}.${canonicalJson}")
+```
+
+Different algorithm from REST HMAC. See [Webhook security](/guides/webhook-security).
+
+## Scopes
+
+OAuth and API keys share the same scope strings. Prefer the `read:*` / `write:*` form:
+
+| Scope | Access |
+| --- | --- |
+| `read:agents` / `write:agents` | Agent CRUD |
+| `read:strategies` / `write:strategies` | Strategy bots |
+| `read:wallet` / `write:wallet` | Wallet and virtual mode |
+| `read:trades` | Trade history |
+| `trades:execute` | Trade execution (legacy alias; prefer `write:wallet` + agent flows) |
+| `read:earn` | Earnings and claims |
+| `read:ai` / `write:ai` | AI chat tools |
+| `admin:*` | Platform admin only (not available via OAuth) |
+
+Legacy aliases (`agents:read`, `bots:write`, etc.) still work.
+
+## MCP authentication
+
+Send the same API key or OAuth token on **every** MCP request, including `initialize`. Sessions are credential-bound. See [MCP Server](/guides/mcp).
+
+## Protected endpoints
+
+All `/api/v1/*` routes (except public marketplace browse and inbound webhooks) require authentication. The API Reference playground may label auth as optional for try-it convenience; production calls **must** include credentials.

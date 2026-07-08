@@ -3,7 +3,7 @@ title: OAuth 2.1
 description: Authorization code + PKCE for AI assistant and CLI clients.
 ---
 
-Echo Zero supports OAuth 2.1 authorization code with PKCE for clients that cannot safely store long-lived API keys — Claude connectors, ChatGPT apps, local CLIs, and directory integrations.
+EchoZero supports OAuth 2.1 authorization code with PKCE for clients that cannot safely store long-lived API keys - Claude connectors, ChatGPT apps, local CLIs, and directory integrations.
 
 ## Endpoints
 
@@ -16,7 +16,7 @@ Echo Zero supports OAuth 2.1 authorization code with PKCE for clients that canno
 | Introspect | `POST` | `https://mcp.echozero.app/oauth/introspect` |
 | Verify status | `GET` | `https://mcp.echozero.app/status` |
 
-User consent is handled in the Dev Portal at [devportal.echozero.app/mcp/oauth/authorize](https://devportal.echozero.app/mcp/oauth/authorize). Users approve from their saved portal session — do not ask them to copy JWTs from browser devtools.
+User consent is handled in the Dev Portal at [devportal.echozero.app/mcp/oauth/authorize](https://devportal.echozero.app/mcp/oauth/authorize). Users approve from their saved portal session - do not ask them to copy JWTs from browser devtools.
 
 ## PKCE parameters
 
@@ -26,11 +26,11 @@ User consent is handled in the Dev Portal at [devportal.echozero.app/mcp/oauth/a
 | `client_id` | Yes | Registered client id (e.g. `echozero-cli`) |
 | `redirect_uri` | Yes | Must match a registered redirect URI exactly |
 | `scope` | Yes | Space-delimited OAuth scopes (see below) |
-| `state` | Yes | Opaque CSRF token — validate on callback |
+| `state` | Yes | Opaque CSRF token - validate on callback |
 | `code_challenge` | Yes | `BASE64URL(SHA256(code_verifier))` |
 | `code_challenge_method` | Yes | `S256` |
 
-Generate a `code_verifier` (43–128 random characters) and keep it secret until token exchange.
+Generate a `code_verifier` (43-128 random characters) and keep it secret until token exchange.
 
 ## Browser consent flow
 
@@ -51,10 +51,10 @@ Generate a `code_verifier` (43–128 random characters) and keep it secret until
     ```
   </Step>
   <Step title="User approves in Dev Portal">
-    Echo Zero redirects to the Dev Portal consent page. If the user is not signed in, they authenticate first, then approve the requested scopes.
+    EchoZero redirects to the Dev Portal consent page. If the user is not signed in, they authenticate first, then approve the requested scopes.
   </Step>
   <Step title="Receive authorization code">
-    Echo Zero redirects back to your `redirect_uri` with `?code=...&state=...`. Verify `state` matches what you sent.
+    EchoZero redirects back to your `redirect_uri` with `?code=...&state=...`. Verify `state` matches what you sent.
   </Step>
   <Step title="Exchange code for token">
     ```bash
@@ -122,6 +122,29 @@ Scopes map to API key permissions. Request only what your integration needs:
 
 Legacy scope aliases (`agents:read`, `bots:write`, etc.) are also accepted. `admin:*` is not available via OAuth.
 
+## Token lifetime and refresh
+
+| Token | TTL | Notes |
+| --- | --- | --- |
+| Authorization code | **5 minutes** | Single use; exchanged immediately |
+| Access token | **1 hour** (`expires_in: 3600`) | No `refresh_token` is issued today |
+
+When the access token expires, **re-run the PKCE consent flow** or use a long-lived **API key** for headless servers. There is no `offline_access` or refresh grant at this time.
+
+### `code_verifier` requirements
+
+43-128 characters from `[A-Z]`, `[a-z]`, `[0-9]`, `.`, `-`, `_`, `~` (unreserved URI characters).
+
+## OAuth error responses
+
+| Condition | HTTP | Message / behavior |
+| --- | --- | --- |
+| Expired or reused code | 400 | `Invalid or expired authorization code` |
+| PKCE mismatch | 400 | `Invalid code_verifier` |
+| Wrong `redirect_uri` | 400 | Redirect URI mismatch |
+| Invalid `client_id` | 400 | Unknown client |
+| Invalid `state` on callback | — | Your app should reject the callback |
+
 ## MCP with OAuth
 
 OAuth tokens work on MCP the same way as API keys:
@@ -136,15 +159,17 @@ MCP sessions are **bound to the credential** used at `initialize`. Switching API
 
 See the [MCP Server guide](/guides/mcp) for a full `initialize` example.
 
-## Assistant setup shortcut
+## Assistant setup (coming soon)
 
-Install the Echo Zero skills pack — it wires OAuth and MCP for Claude Code, Codex, and OpenClaw:
+<Note>
+**Coming soon:** The public skills pack (`EchoZeroApp/skills`) and `ez login` CLI are not yet published. Use the PKCE flow above or API keys until the skills repo is public.
+</Note>
 
 ```bash
-npx skills add EchoZeroApp/skills-draft
+# When available:
+npx skills add EchoZeroApp/skills
+ez login
 ```
-
-Then run `ez login` (included with the skills install) to open Dev Portal consent and save your token locally.
 
 ## Directory integrations
 
