@@ -9,7 +9,7 @@ npm i -g mintlify
 mintlify dev
 ```
 
-Open the URL printed by the CLI (usually `http://localhost:3000`).
+Open the URL printed by the CLI (usually `http://localhost:3000`). 
 
 ## Deploy
 
