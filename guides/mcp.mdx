@@ -25,7 +25,7 @@ Send credentials on **every** MCP request, including the first `initialize`:
 - `x-api-key: <developer_api_key>`, or
 - `Authorization: Bearer <access_token>` (API key or [OAuth token](/guides/oauth))
 
-Optional REST HMAC headers (`x-signature`, `x-timestamp`) also apply when your API key has a secret. See [API keys + HMAC](/guides/api-keys-hmac).
+REST HMAC headers (`x-signature`, `x-timestamp`) are **required** for API-key auth. See [API keys + HMAC](/guides/api-keys-hmac). JWT/OAuth session tokens are exempt.
 
 ## Session lifecycle
 

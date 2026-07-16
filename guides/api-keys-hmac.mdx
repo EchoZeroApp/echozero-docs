@@ -1,6 +1,6 @@
 ---
 title: API keys and HMAC signing
-description: Authenticate REST and MCP requests with API keys and optional request signing.
+description: Authenticate REST and MCP requests with API keys and required request signing.
 ---
 
 ## API key authentication
@@ -29,9 +29,9 @@ Create and revoke keys in the [Dev Portal](https://devportal.echozero.app). Each
 | `read:trades` | Trade and signal history |
 | `read:earn` | Earnings and claims |
 
-## Optional REST HMAC signing
+## Required REST HMAC signing
 
-For server-to-server integrations, sign requests with the **API secret** returned when the key was created. HMAC is **opt-in**: when `x-signature` is omitted, verification is skipped.
+Every API-key authenticated request must be signed with the **API secret** returned when the key was created. JWT and OAuth bearer session tokens are exempt.
 
 | Header | Description |
 | --- | --- |
@@ -100,7 +100,7 @@ me = client.get("/api/v1/users/me", hmac=True)
 print(me)
 ```
 
-Pass `hmac=True` on each request to sign it, or omit when HMAC is not needed.
+`hmac=True` is the default for API-key clients — every request is signed automatically.
 
 ### TypeScript (echozero-sdk)
 
@@ -114,6 +114,8 @@ const client = new EchoZeroClient({
 
 const me = await client.get('/api/v1/users/me', { hmac: true });
 ```
+
+The SDK signs every API-key request by default when `hmacSecretKey` is configured.
 
 Or sign manually with `signRestRequest`:
 
@@ -132,7 +134,8 @@ const headers = await signRestRequest({
 
 | Condition | HTTP | Message |
 | --- | --- | --- |
-| `x-signature` present, no `x-timestamp` | 401 | Missing x-timestamp header |
+| Missing `x-signature` (API key auth) | 401 | Missing x-signature header |
+| Missing `x-timestamp` | 401 | Missing x-timestamp header |
 | Non-numeric timestamp | 401 | Invalid x-timestamp value |
 | Timestamp > 5 min drift | 401 | Request timestamp expired |
 | Wrong signature | 401 | Invalid HMAC signature |
@@ -140,4 +143,4 @@ const headers = await signRestRequest({
 
 ## MCP authentication
 
-API keys (with optional HMAC) work on `POST https://mcp.echozero.app/mcp` the same way as REST. Send `x-api-key` or `Authorization: Bearer` on every MCP call, including `initialize`. See the [MCP Server guide](/guides/mcp).
+API keys (with required HMAC) work on `POST https://mcp.echozero.app/mcp` the same way as REST. Send `x-api-key` or `Authorization: Bearer` on every MCP call, including `initialize`. See the [MCP Server guide](/guides/mcp).

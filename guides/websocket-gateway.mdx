@@ -20,7 +20,7 @@ Pass your developer API key in the Socket.IO handshake:
 - Header: `x-api-key: ez_live_...`, or
 - Auth payload: `{ "apiKey": "ez_live_..." }`
 
-Connection-level HMAC is **not** used on WebSocket (unlike optional REST request signing). Protect the API key in transit (TLS only).
+Connection-level HMAC is **not** used on WebSocket. REST API-key requests require request signing; protect credentials in transit (TLS only).
 
 Invalid or missing keys receive an `error` event and disconnect.
 

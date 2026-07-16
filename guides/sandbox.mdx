@@ -36,10 +36,10 @@ curl -sS -X POST "https://mcp.echozero.app/api/sandbox/agents/{agentId}/trade" \
   }'
 ```
 
-### Simulate signal parsing for a strategy
+### Simulate signal parsing for an agent
 
 ```bash
-curl -sS -X POST "https://mcp.echozero.app/api/sandbox/strategies/{strategyId}/signals/simulate" \
+curl -sS -X POST "https://mcp.echozero.app/api/sandbox/agents/{agentId}/signals/simulate" \
   -H "x-api-key: $EZ_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -50,7 +50,7 @@ curl -sS -X POST "https://mcp.echozero.app/api/sandbox/strategies/{strategyId}/s
 ### List sandbox signal history
 
 ```bash
-curl -sS "https://mcp.echozero.app/api/sandbox/strategies/{strategyId}/signals?page=1&limit=20" \
+curl -sS "https://mcp.echozero.app/api/sandbox/agents/{agentId}/signals?page=1&limit=20" \
   -H "x-api-key: $EZ_API_KEY"
 ```
 

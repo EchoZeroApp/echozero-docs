@@ -7,7 +7,7 @@ EchoZero uses **three distinct signing schemes** depending on direction and tran
 
 | Direction | Headers | Timestamp | Payload signed |
 | --- | --- | --- | --- |
-| REST API (opt-in) | `x-signature`, `x-timestamp` | Epoch **ms** | `timestamp + METHOD + path + body` |
+| REST API | `x-signature`, `x-timestamp` | Epoch **ms** | `timestamp + METHOD + path + body` |
 | Inbound agent signals | `X-EZ-Signature`, `X-EZ-Timestamp` | Epoch **seconds** | `timestamp + "." + canonicalJson` |
 | Outbound `signal.execution` | `x-echozero-signature`, `x-echozero-timestamp` | ISO in payload | `timestamp + "." + jsonBody` |
 
@@ -170,7 +170,7 @@ Used when Discord Gateway ingest is off or for webhook-based testing.
 
 ## REST API HMAC (developer routes)
 
-For authenticated developer API calls (`/api/v1/*`), optional HMAC uses your **API secret** with millisecond timestamps and method+path signing. See [API keys and HMAC](/guides/api-keys-hmac).
+For authenticated developer API calls (`/api/v1/*`), HMAC uses your **API secret** with millisecond timestamps and method+path signing. See [API keys and HMAC](/guides/api-keys-hmac).
 
 <Warning>
 Do **not** use REST API HMAC headers (`x-signature` / `x-timestamp`) on inbound agent signal POSTs. Agent ingress requires `X-EZ-Signature` / `X-EZ-Timestamp` with the per-agent `ezw_` secret.
