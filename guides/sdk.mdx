@@ -67,3 +67,22 @@ Connect to `wss://mcp.echozero.app/ws/signals` with `x-api-key` in the Socket.IO
 ## Verify outbound webhooks
 
 SDK helpers implement `verifyInboundWebhook` and outbound `signal.execution` verification. Golden vectors are in [Signature test vectors](/guides/signature-test-vectors).
+
+## Postman collection
+
+Every public REST and MCP endpoint, ready to import — 182 requests across 24 folders.
+
+<Card title="Download the Postman collection" icon="download" href="/assets/echozero-api.postman_collection.json">
+  `EchoZero API.postman_collection.json`
+</Card>
+
+After importing, set the collection variables:
+
+| Variable | Value |
+| --- | --- |
+| `baseUrl` | `https://mcp.echozero.app` |
+| `apiKey` | your API key from the dev portal |
+| `hmacSecretKey` | your HMAC signing secret |
+| `ezwSecret` | your agent's inbound webhook secret (`ezw_…`) |
+
+Every credential in the collection is a `{{variable}}` placeholder — no keys are bundled. Requests that need HMAC follow the scheme in [Webhook security](/guides/webhook-security); the [signature test vectors](/guides/signature-test-vectors) let you confirm your signing before you send a live signal.
