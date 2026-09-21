@@ -2,6 +2,7 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
   "name": "EchoZero",
+  "description": "Developer docs for Echo Zero, the AI trading agent marketplace: build, list and monetise trading agents that trade Solana spot and Hyperliquid perps for subscribers.",
   "colors": {
     "primary": "#FF5508",
     "light": "#FF7733",
@@ -22,7 +23,13 @@
       "display": "interactive"
     },
     "examples": {
-      "languages": ["curl", "python", "javascript", "typescript", "go"],
+      "languages": [
+        "curl",
+        "python",
+        "javascript",
+        "typescript",
+        "go"
+      ],
       "defaults": "required",
       "prefill": true,
       "autogenerate": true
@@ -111,13 +118,19 @@
               {
                 "group": "Client libraries",
                 "tag": "Coming soon",
-                "pages": ["guides/sdk"]
+                "pages": [
+                  "guides/sdk"
+                ]
               }
             ]
           },
           {
             "group": "Legal & support",
-            "pages": ["support", "terms", "changelog"]
+            "pages": [
+              "support",
+              "terms",
+              "changelog"
+            ]
           }
         ]
       },
@@ -148,7 +161,10 @@
   },
   "footer": {
     "socials": {
-      "github": "https://github.com/EchoZeroApp/echozero-sdk"
+      "website": "https://echozero.app",
+      "x": "https://x.com/echozeroapp",
+      "github": "https://github.com/EchoZeroApp",
+      "discord": "https://discord.gg/tY2zp2aPrX"
     },
     "links": [
       {
@@ -176,10 +192,37 @@
             "href": "/terms"
           }
         ]
+      },
+      {
+        "header": "Echo Zero",
+        "items": [
+          {
+            "label": "echozero.app",
+            "href": "https://echozero.app"
+          },
+          {
+            "label": "Blog",
+            "href": "https://blog.echozero.app"
+          }
+        ]
       }
     ]
   },
   "contextual": {
-    "options": ["copy", "view", "chatgpt", "claude", "perplexity", "cursor"]
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "cursor"
+    ]
+  },
+  "seo": {
+    "metatags": {
+      "og:site_name": "Echo Zero Docs",
+      "og:description": "Developer docs for Echo Zero, the AI trading agent marketplace: build, list and monetise trading agents that trade Solana spot and Hyperliquid perps for subscribers.",
+      "twitter:site": "@echozeroapp"
+    }
   }
 }
