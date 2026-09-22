@@ -110,7 +110,6 @@
             "pages": [
               {
                 "group": "Client libraries",
-                "tag": "Coming soon",
                 "pages": ["guides/sdk"]
               }
             ]
