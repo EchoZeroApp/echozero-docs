@@ -7,11 +7,13 @@ The WebSocket gateway lets your engine push signals with lower latency than HTTP
 
 ## Endpoint
 
+The gateway is a **Socket.IO v4** server, not a plain WebSocket. Connect a Socket.IO client to:
+
 ```
-wss://mcp.echozero.app/ws/signals
+https://mcp.echozero.app/ws/signals
 ```
 
-Socket.IO namespace: `/ws/signals`
+That is host `mcp.echozero.app`, Socket.IO path `/socket.io/` (the default) and namespace `/ws/signals`. A raw WebSocket client pointed at `wss://mcp.echozero.app/ws/signals` will not connect.
 
 ## Authentication
 
@@ -22,28 +24,42 @@ Pass your developer API key in the Socket.IO handshake:
 
 Connection-level HMAC is **not** used on WebSocket. REST API-key requests require request signing; protect credentials in transit (TLS only).
 
-Invalid or missing keys receive an `error` event and disconnect.
+On success the server emits `authenticated` (`{ "ok": true }`). Invalid or missing keys receive an `error` event (`{ "message": "Invalid or expired API key" }`) and are disconnected.
 
 ## Send a signal
 
-Emit event `signal` with payload:
+Emit event `signal`. Every payload needs `developerAgentId` (one of your agents) plus a structured [signal envelope](/guides/signal-envelope):
 
 ```json
 {
   "developerAgentId": "674a1b2c3d4e5f6789012345",
-  "text": "BUY SOL $100",
-  "idempotencyKey": "ws-entry-001"
+  "eventType": "buy",
+  "idempotencyKey": "ws-entry-001",
+  "chain": "solana",
+  "symbol": "SOL",
+  "side": "long",
+  "tradeType": "spot",
+  "amount": 100,
+  "reasoning": "Breakout above range high on rising volume."
 }
 ```
 
-Structured `#1098` payloads work the same as [Signal envelope](/guides/signal-envelope) (include `eventType`, `reasoning`, `idempotencyKey`).
+The legacy minimal shape `{ "developerAgentId", "action": "buy" | "sell", "tokenAddress", "amount" }` is also accepted.
+
+<Warning>
+Natural-language `text` signals (for example `"BUY SOL $100"`) are **not** parsed on the WebSocket gateway and are rejected with `Missing required fields`. Send `text` signals to the [HTTP inbound webhook](/guides/webhook-security) instead.
+</Warning>
 
 ## Responses
 
-| Event | Meaning |
-| --- | --- |
-| `signal:ack` | Accepted for processing |
-| `signal:error` | Validation or auth failure |
+| Event | Payload | Meaning |
+| --- | --- | --- |
+| `authenticated` | `{ "ok": true }` | API key accepted; you can emit signals |
+| `error` | `{ "message" }` | Connection auth failed; the socket is then disconnected |
+| `signal:received` | `{ "signalId", "status", "executionResult"? }` | Signal ingested. `executionResult` has `success`, `txHash`, `executedAmountUsd`, `errorMessage` when execution ran inline |
+| `signal:error` | `{ "message" }` | Signal rejected (validation, missing `developerAgentId`, not authenticated) |
+
+Responses are **not correlated** to requests (there is no request id or ack callback). Use `idempotencyKey` on every signal and match on the returned `signalId`.
 
 ## Rate limits
 
@@ -65,4 +81,27 @@ Connection inherits your API key rate limit tier (60/300/1000 req/min on REST; b
 
 ## SDK
 
-The echozero-sdk WebSocket client wraps connect, `signal` emit, and reconnect. See [SDK](/guides/sdk).
+The [SDK](/guides/sdk#websocket-signal-client) ships a signal client in all four languages (version **0.2.0** and later). It handles the Socket.IO handshake, authentication and pings. The TypeScript and Python clients also reconnect automatically.
+
+```typescript
+import { EchoZeroSignalClient } from '@echozero/sdk';
+
+const signals = new EchoZeroSignalClient({ apiKey: process.env.EZ_API_KEY! });
+signals.onReceived((e) => console.log(e.signalId, e.status));
+await signals.connect();
+signals.sendSignal(agentId, { eventType: 'buy', symbol: 'SOL', amount: 100, idempotencyKey: 'ws-entry-001', reasoning: '...' });
+```
+
+Without the SDK, any Socket.IO v4 client works:
+
+```typescript
+import { io } from 'socket.io-client';
+
+const socket = io('https://mcp.echozero.app/ws/signals', {
+  transports: ['websocket'],
+  auth: { apiKey: process.env.EZ_API_KEY },
+});
+socket.on('authenticated', () => socket.emit('signal', { developerAgentId: agentId, eventType: 'buy', /* ... */ }));
+socket.on('signal:received', console.log);
+socket.on('signal:error', console.error);
+```

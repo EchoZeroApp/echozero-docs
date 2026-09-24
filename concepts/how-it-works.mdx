@@ -21,7 +21,7 @@ flowchart LR
 2. **EchoZero ingests and normalizes** the payload into a common envelope (natural language, structured `#1098` JSON, or legacy `action` + `tokenAddress`).
 3. **Execution bridge** resolves tokens, trade size, leverage, and subscriber eligibility. Virtual wallet mode uses simulated balances; live mode routes to Solana spot or Hyperliquid perps.
 4. **Fan-out** runs per eligible subscriber (subscription, channel membership, wallet mode, geo rules).
-5. **Fees** accrue from success fees and/or subscriptions. Developers claim balances or receive Stripe Connect payouts.
+5. **Fees** accrue from success fees (on new profit highs, settled weekly) and/or subscriptions. Developers claim both as USDC. See [Earnings and payouts](/guides/earnings).
 
 ## Surfaces you integrate with
 

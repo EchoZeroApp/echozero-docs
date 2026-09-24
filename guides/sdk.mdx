@@ -3,30 +3,47 @@ title: SDK client libraries
 description: Official TypeScript, Python, Go, and Rust packages for REST, WebSocket, and webhook signing.
 ---
 
-The [echozero-sdk](https://github.com/EchoZeroApp/echozero-sdk) repo provides clients in **four languages**: TypeScript, Python, Go, and Rust.
+The [echozero-sdk](https://github.com/EchoZeroApp/echozero-sdk) repo provides clients in **four languages**: TypeScript, Python, Go, and Rust. Every package covers the same four jobs:
+
+- **REST client** with optional HMAC request signing
+- **Signal ingress**: signed posts to your agent's inbound webhook
+- **WebSocket signal client** for the `/ws/signals` gateway
+- **Webhook verification** for inbound and outbound (`signal.execution`) signatures
 
 ## Install
 
-```bash
+<CodeGroup>
+
+```bash TypeScript
 npm install @echozero/sdk
 ```
 
-```bash
+```bash Python
 pip install echozero
 ```
 
-```bash
+```bash Go
 go get github.com/EchoZeroApp/echozero-sdk/packages/go/echozero
 ```
 
-```toml
+```toml Rust
 # Cargo.toml
-echozero = "0.1"
+echozero = { version = "0.2", features = ["websocket"] }  # drop the feature if you only need REST
 ```
+
+</CodeGroup>
+
+<Note>
+Use **0.2.0 or later** for the WebSocket signal client. The 0.1.0 WebSocket client could not connect to the gateway.
+</Note>
 
 ## REST client
 
-```typescript
+API-key requests must be HMAC-signed (see [API keys and HMAC](/guides/api-keys-hmac)). Pass your secret key to the client and the SDK signs for you.
+
+<CodeGroup>
+
+```typescript TypeScript
 import { EchoZeroClient } from '@echozero/sdk';
 
 const client = new EchoZeroClient({
@@ -37,35 +54,191 @@ const client = new EchoZeroClient({
 const me = await client.get('/api/v1/users/me', { hmac: true });
 ```
 
-```python
+```python Python
 from echozero import EchoZeroClient
 
 client = EchoZeroClient(api_key="ez_live_...", hmac_secret_key="ezs_...")
 me = client.get("/api/v1/users/me", hmac=True)
 ```
 
-## Inbound webhook signing
+```go Go
+client := echozero.NewClient("https://mcp.echozero.app").
+    WithAPIKey(os.Getenv("EZ_API_KEY")).
+    WithHMACSecretKey(os.Getenv("EZ_SECRET_KEY"))
 
-```typescript
-import { signInboundWebhook } from '@echozero/sdk';
-
-const headers = await signInboundWebhook({
-  signingSecret: process.env.EZW_SECRET!,
-  body: { text: 'BUY SOL $100', idempotencyKey: 'key-1' },
-});
+var me map[string]any
+err := client.Request(ctx, "GET", "/api/v1/users/me", echozero.RequestOptions{HMAC: true}, &me)
 ```
+
+```rust Rust
+let client = echozero::EchoZeroClient::new("https://mcp.echozero.app")
+    .with_api_key(std::env::var("EZ_API_KEY")?)
+    .with_hmac_secret_key(std::env::var("EZ_SECRET_KEY")?);
+
+let me = client
+    .request_json(reqwest::Method::GET, "/api/v1/users/me", None, true) // true = HMAC-sign
+    .await?;
+```
+
+</CodeGroup>
+
+## Send a signal over HTTP
+
+`postAgentSignal` signs the body with your agent's `ezw_` webhook secret and posts it to `/api/public/agent-signals/{agentId}`. This is the only path that accepts natural-language `text` signals as well as the structured [signal envelope](/guides/signal-envelope).
+
+<CodeGroup>
+
+```typescript TypeScript
+const result = await client.postAgentSignal(
+  process.env.EZ_AGENT_ID!,
+  { text: 'BUY SOL $100', idempotencyKey: 'entry-001' },
+  process.env.EZW_SECRET!,
+);
+```
+
+```python Python
+result = client.post_agent_signal(
+    os.environ["EZ_AGENT_ID"],
+    {"text": "BUY SOL $100", "idempotencyKey": "entry-001"},
+    os.environ["EZW_SECRET"],
+)
+```
+
+```go Go
+var result map[string]any
+err := client.PostAgentSignal(ctx, os.Getenv("EZ_AGENT_ID"),
+    map[string]any{"text": "BUY SOL $100", "idempotencyKey": "entry-001"},
+    os.Getenv("EZW_SECRET"), &result)
+```
+
+```rust Rust
+let body = serde_json::json!({ "text": "BUY SOL $100", "idempotencyKey": "entry-001" });
+let result = client
+    .post_agent_signal(&agent_id, body.as_object().unwrap().clone(), &ezw_secret)
+    .await?;
+```
+
+</CodeGroup>
+
+To sign without sending, use `signInboundWebhook` / `sign_inbound_webhook` / `SignInboundWebhook`, which return the `X-EZ-Timestamp` and `X-EZ-Signature` headers.
 
 ## WebSocket signal client
 
-Connect to `wss://mcp.echozero.app/ws/signals` with `x-api-key` in the Socket.IO handshake. Emit `signal` events with the same JSON schema as the inbound webhook.
+Connects to the Socket.IO [signal gateway](/guides/websocket-gateway) with your developer API key. The gateway takes **structured** signals only (`eventType`, or the legacy `action` / `tokenAddress` shape), not `text`. Responses arrive as `signal:received` / `signal:error` events and are not tied to a specific request, so match them on `idempotencyKey` / `signalId`.
 
-## Verify outbound webhooks
+<CodeGroup>
 
-SDK helpers implement `verifyInboundWebhook` and outbound `signal.execution` verification. Golden vectors are in [Signature test vectors](/guides/signature-test-vectors).
+```typescript TypeScript
+import { EchoZeroSignalClient } from '@echozero/sdk';
+
+const signals = new EchoZeroSignalClient({ apiKey: process.env.EZ_API_KEY! });
+signals.onReceived((event) => console.log('accepted', event.signalId, event.status));
+signals.onSignalError((event) => console.error('rejected', event.message));
+
+await signals.connect(); // resolves on `authenticated`, rejects on a bad key
+
+signals.sendSignal(process.env.EZ_AGENT_ID!, {
+  eventType: 'buy',
+  chain: 'solana',
+  symbol: 'SOL',
+  side: 'long',
+  tradeType: 'spot',
+  amount: 100,
+  idempotencyKey: 'entry-001',
+  reasoning: 'Breakout above range high',
+});
+```
+
+```python Python
+from echozero import EchoZeroSignalClient
+
+signals = EchoZeroSignalClient(
+    api_key=os.environ["EZ_API_KEY"],
+    on_received=lambda e: print("accepted", e["signalId"], e["status"]),
+    on_signal_error=lambda e: print("rejected", e["message"]),
+)
+signals.connect()  # raises PermissionError on a bad key
+
+signals.send_signal(os.environ["EZ_AGENT_ID"], {
+    "eventType": "buy",
+    "chain": "solana",
+    "symbol": "SOL",
+    "side": "long",
+    "tradeType": "spot",
+    "amount": 100,
+    "idempotencyKey": "entry-001",
+    "reasoning": "Breakout above range high",
+})
+signals.wait()
+```
+
+```go Go
+signals := echozero.NewSignalClient(os.Getenv("EZ_API_KEY"))
+if err := signals.Connect(ctx); err != nil {
+    return err
+}
+defer signals.Close()
+
+err := signals.SendSignal(os.Getenv("EZ_AGENT_ID"), map[string]any{
+    "eventType":      "buy",
+    "chain":          "solana",
+    "symbol":         "SOL",
+    "side":           "long",
+    "tradeType":      "spot",
+    "amount":         100,
+    "idempotencyKey": "entry-001",
+    "reasoning":      "Breakout above range high",
+})
+
+for event := range signals.Events() { // keep draining: pings are answered from this loop
+    fmt.Println(event.Name, string(event.Data))
+}
+```
+
+```rust Rust
+use echozero::websocket::SignalClient;
+
+let mut signals = SignalClient::connect("https://mcp.echozero.app", &api_key).await?;
+
+let signal = serde_json::json!({
+    "eventType": "buy",
+    "chain": "solana",
+    "symbol": "SOL",
+    "side": "long",
+    "tradeType": "spot",
+    "amount": 100,
+    "idempotencyKey": "entry-001",
+    "reasoning": "Breakout above range high",
+});
+signals.send_signal(&agent_id, signal.as_object().unwrap().clone())?;
+
+while let Some(event) = signals.next_event().await {
+    println!("{} {}", event.name, event.data);
+}
+```
+
+</CodeGroup>
+
+The TypeScript and Python clients reconnect automatically. The Go and Rust clients do not: connect again and re-send unacknowledged signals with the **same** `idempotencyKey`.
+
+## Verify webhooks
+
+`verifyOutboundWebhook` checks the `x-echozero-signature` on `signal.execution` callbacks EchoZero sends to you. `verifyInboundWebhook` checks an `X-EZ-Signature` you produced (useful in tests). Golden vectors are in [Signature test vectors](/guides/signature-test-vectors).
+
+```typescript
+import { verifyOutboundWebhook } from '@echozero/sdk';
+
+const ok = await verifyOutboundWebhook({
+  secretKey: process.env.WEBHOOK_SECRET!,
+  rawBody, // the exact request body string
+  timestamp: req.headers['x-echozero-timestamp'],
+  signature: req.headers['x-echozero-signature'],
+});
+```
 
 ## Postman collection
 
-Every public REST and MCP endpoint, ready to import — 182 requests across 24 folders.
+Every public REST and MCP endpoint, ready to import. 182 requests across 24 folders.
 
 <Card title="Download the Postman collection" icon="download" href="/assets/echozero-api.postman_collection.json">
   `EchoZero API.postman_collection.json`
@@ -80,4 +253,4 @@ After importing, set the collection variables:
 | `hmacSecretKey` | your HMAC signing secret |
 | `ezwSecret` | your agent's inbound webhook secret (`ezw_…`) |
 
-Every credential in the collection is a `{{variable}}` placeholder — no keys are bundled. Requests that need HMAC follow the scheme in [Webhook security](/guides/webhook-security); the [signature test vectors](/guides/signature-test-vectors) let you confirm your signing before you send a live signal.
+Every credential in the collection is a `{{variable}}` placeholder, so no keys are bundled. Requests that need HMAC follow the scheme in [Webhook security](/guides/webhook-security); the [signature test vectors](/guides/signature-test-vectors) let you confirm your signing before you send a live signal.

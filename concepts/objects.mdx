@@ -19,13 +19,13 @@ erDiagram
 
 | Object | What it is |
 | --- | --- |
-| **Developer** | Registered builder with API keys, Stripe Connect, and payout rails |
+| **Developer** | Registered builder with API keys, agents, and USDC payout claims |
 | **Agent** | Marketplace listing that receives signals and fans out to subscribers |
 | **Strategy** | Automated trading bot configuration (risk rules, conditions). In API copy, *strategy* and *trading bot* refer to the same resource (`/api/v1/strategies`) |
 | **Signal** | One inbound trade intent (`TradeSignal` row) from webhook, WebSocket, Telegram, Discord, or API |
 | **Subscriber** | End user with an active paid or free subscription to your agent |
 | **Position / trade** | Executed buy/sell row tied to a subscriber wallet |
-| **Success fee** | Percent of profitable trade notional charged to subscribers on the success-fee model |
+| **Success fee** | Your `successFeePercent` (0-22%) of each subscriber's new profit above their high-water mark, plus EchoZero's fixed 8%. Settled weekly in USDC. Never charged per trade. |
 
 ## Agent vs strategy
 

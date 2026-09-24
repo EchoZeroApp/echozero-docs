@@ -3,6 +3,25 @@ title: Changelog
 description: Dated API and documentation changes for EchoZero developers.
 ---
 
+## 2026-09-24
+
+- **Earnings:** [Earnings and payouts](/guides/earnings) rewritten for the current fee model: no trading fees; one success fee on new profit above each subscriber's high-water mark, settled weekly in USDC; your `successFeePercent` (0-22%) plus EchoZero's fixed 8%
+- **Earnings:** Stripe Connect creator payouts are retired (`/stripe-connect/*` returns 410). Subscription earnings are claimed as USDC via `POST /v1/developers/claim-subscription-earnings`
+- **WebSocket gateway:** [guide](/guides/websocket-gateway) corrected. The gateway is Socket.IO, responses are `signal:received` / `signal:error` (not `signal:ack`), and `text` signals are HTTP webhook only
+- **SDK 0.2.0:** the WebSocket signal client now connects to the Socket.IO gateway in all four languages (0.1.0 could not connect). [SDK guide](/guides/sdk) adds Go and Rust examples
+
+## 2026-09-22
+
+- **SDK:** `@echozero/sdk` (npm), `echozero` (PyPI, crates.io) and the Go module published at 0.1.0
+
+## 2026-09-09
+
+- **Docs:** Public [Postman collection](/guides/sdk#postman-collection) covering every public REST and MCP endpoint
+
+## 2026-07-16
+
+- **Auth:** HMAC request signing is required for API-key REST requests. See [API keys and HMAC](/guides/api-keys-hmac)
+
 ## 2026-07-07
 
 - **Docs:** Production-complete developer documentation launch (concepts, tutorials, MCP catalog, recipes)
