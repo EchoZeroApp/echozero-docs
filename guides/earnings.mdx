@@ -1,32 +1,44 @@
 ---
 title: Earnings and payouts
-description: Marketplace revenue, subscriber fees, strategy claims, and Stripe Connect payouts.
+description: How success fees and subscriptions pay developers, and how to claim your USDC.
 ---
 
-Developers earn from agent subscriptions, subscriber success fees, and related marketplace revenue splits. Use the developer revenue and claims endpoints to inspect balances, claim earnings, and track payout history.
+Developers earn from subscriber success fees and agent subscriptions. There are **no trading fees**: subscribers are never charged per trade, and you are never paid per trade. Everything is settled and paid in **USDC**.
 
-All routes require developer registration and API key authentication with HMAC signing — see [API keys and HMAC](/guides/api-keys-hmac).
+All routes require developer registration and API key authentication with HMAC signing. See [API keys and HMAC](/guides/api-keys-hmac).
 
 ## Fee economics
 
-| Stream | Who pays | Rate | Developer share |
+| Stream | Who pays | Rate | Split |
 | --- | --- | --- | --- |
-| **Subscription** | Subscriber monthly | You set `monthlyPrice` | **80%** of invoice (platform **20%** via Stripe `application_fee_percent`) |
-| **Success fee** | Subscriber on **profitable** closed trades | You set `successFeePercent` (e.g. 10-20% of **profit**) | **80%** of collected success fee (platform **20%**) |
-| **Both** | Subscribers | Subscription + success fee | Combined per above |
+| **Success fee** | Subscriber, only on **new profit highs** | You set `successFeePercent` (**0-22%**) | You keep your full `successFeePercent`. EchoZero adds a fixed **8%** platform fee on top. |
+| **Subscription** | Subscriber, monthly | You set `monthlyPrice` | **80%** to you, **20%** platform |
+| **Both** | Subscriber | Subscription + success fee | Each stream as above |
+
+The most a subscriber can pay in success fees is **30%** of new profit (your 22% maximum plus EchoZero's 8%).
+
+## How the success fee works
+
+EchoZero tracks a **high-water mark** (HWM) for every subscriber on every agent they follow. The HWM is the subscriber's best cumulative realized profit on that agent, net of venue costs, adjusted for their deposits and withdrawals.
+
+- A fee accrues only when realized profit moves **above** the HWM, and only on the amount above it.
+- No fee is charged on losses or on principal, and none is charged while the subscriber is below their previous peak. Recovering a drawdown is free.
+- Accrued fees are **settled weekly** from the subscriber's balance. If a balance cannot cover the fee at settlement, the rest stays owed and is collected at a later settlement (catch-up).
+- Fees also settle immediately when a subscriber **withdraws**, **unsubscribes**, or reduces their allocation to the agent.
 
 ### Worked example: success fee
 
-A subscriber follows your signal with a **$10,000** buy. The position closes at **+20%** profit (**$2,000** profit USD).
+Your `successFeePercent` is **15%**. A subscriber's realized profit on your agent reaches **$2,000**, and their previous high-water mark was **$0**.
 
-Your agent `successFeePercent` is **15%** (applied to profit on close, not entry notional):
+1. Fee base: $2,000 - $0 = **$2,000** of new profit
+2. Your creator fee: $2,000 × 15% = **$300**
+3. EchoZero platform fee: $2,000 × 8% = **$160**
+4. The subscriber pays **$460** at the next weekly settlement. Their HWM is now $2,000.
 
-1. Success fee assessed: $2,000 × 15% = **$300**
-2. Platform share (20%): **$60**
-3. Your net success fee: **$240** (claimable via strategy-fee claims)
+The following week, the subscriber's realized profit drops to $1,500 and then recovers to $2,300. Only the **$300** above the $2,000 HWM is charged: $45 to you and $24 to EchoZero.
 
 <Note>
-Success fees accrue on **realized profit** when trades close (`accrueSubscriberFeesOnClose`). Fees are not charged on entry notional unless you configure legacy `feeConfiguration.chargeOnPerformance: false` on non-marketplace bots.
+Accrued but unsettled fees are visible in your earnings totals but are **not claimable** until they have been collected at settlement.
 </Note>
 
 ### Worked example: subscription
@@ -35,7 +47,7 @@ You set `monthlyPrice: 29`. Ten subscribers pay for one month.
 
 1. Gross: **$290**
 2. Platform fee (20%): **$58**
-3. Creator share via Stripe Connect: **$232**
+3. Your share: **$232**, claimable as USDC
 
 ## Monetization models
 
@@ -43,20 +55,23 @@ Set on agent create/update (`pricingModel`):
 
 | Model | Fields |
 | --- | --- |
-| `subscription` | `monthlyPrice` + Stripe Connect |
-| `success-fee` | `successFeePercent` |
+| `subscription` | `monthlyPrice` |
+| `success-fee` | `successFeePercent` (0-22) |
 | `both` | `monthlyPrice` + `successFeePercent` |
 | `free` | No charge |
 
-Set subscription price via agent subscription endpoints or Dev Portal. Stripe Connect onboarding is required before paid subscriptions route creator share.
+Values of `successFeePercent` above **22** are rejected on create, update, and marketplace publish.
 
-## Revenue streams
+## Getting paid
 
-| Stream | Description | Claim path |
+Every payout lands as **USDC in your EchoZero wallet**. You claim it; nothing moves automatically.
+
+| Stream | Becomes claimable | Claim path |
 | --- | --- | --- |
-| **Subscriptions** | Monthly agent subscription revenue (creator share via Stripe Connect) | `POST /v1/developers/claim-subscription-earnings` |
-| **Strategy success fees** | Per-trade success fees from subscriber executions | `POST /v1/developers/claims/agents/{agentId}` or `/claims/all` |
-| **Weekly payouts** | Automated weekly settlement (gross, platform fee, net) | Recorded in payout history - no manual claim |
+| **Success fees** | After the weekly settlement collects them | `POST /v1/developers/claims/agents/{agentId}` or `/claims/all` |
+| **Subscriptions** | Once the payment has been converted to USDC | `POST /v1/developers/claim-subscription-earnings` |
+
+Each weekly settlement also records a payout snapshot (gross, platform fee, net) that you can read from payout history.
 
 ## Key endpoints
 
@@ -66,15 +81,16 @@ Set subscription price via agent subscription endpoints or Dev Portal. Stripe Co
 GET /api/v1/developers/earnings
 ```
 
-Returns:
+Returns (all amounts in USD, paid as USDC):
 
-- `totals` - lifetime success-fee totals from weekly payouts
-- `byAgent` / `byPeriod` - breakdowns
-- `fromSubscriptions` - subscription ledger with `claimableUsd`
-- `fromTrading.claimableUsd` - claimable strategy success fees
-- `totalClaimableUsd` - combined claimable balance
+- `totals`, `byAgent`: success-fee totals, including fees accrued but not yet settled
+- `byPeriod`: weekly payout snapshots
+- `fromTrading.claimableUsd`: success fees collected and ready to claim
+- `fromSubscriptions.claimableUsd`: subscription earnings ready to claim
+- `totalClaimableUsd`: both combined
+- `lifetimeClaimedUsd`, `fromInstantClaims`: what you have already claimed
 
-Check this before claiming.
+Check this before claiming. The `totalClaimable` field is a deprecated alias of `totalClaimableUsd`.
 
 ### Payout history
 
@@ -82,19 +98,9 @@ Check this before claiming.
 GET /api/v1/developers/payouts?page=1&limit=20
 ```
 
-Paginated weekly payout rows: gross amount, platform fee, net paid.
+Paginated weekly payout rows: gross amount, platform fee, net.
 
-### Claim subscription earnings
-
-```
-POST /api/v1/developers/claim-subscription-earnings
-```
-
-Marks all `CLAIMABLE` subscription creator earnings as `CLAIMED`. Returns total USD claimed and number of ledger rows updated.
-
-Returns **400** when there is nothing to claim. Call `GET /earnings` first to check `fromSubscriptions.claimableUsd`.
-
-### Strategy success fee claims
+### Claim success fees
 
 ```
 GET  /api/v1/developers/claims/strategy-fees     # per-agent claimable summary
@@ -102,37 +108,23 @@ POST /api/v1/developers/claims/agents/{agentId}  # claim one agent
 POST /api/v1/developers/claims/all               # claim all owned agents
 ```
 
-Per-agent claims drain success-fee balances (SOL transfer), mark subscription-ledger rows `CLAIMED`, and support legacy bot `feeEarnings`. Capped at `CLAIM_MAX_USD` per agent per call.
+Transfers collected success fees to your wallet as USDC. Each call is capped per agent (`CLAIM_MAX_USD`); call again to claim any remainder.
 
 Returns **404** if the agent is not found or not owned by the caller.
 
-## Stripe Connect
-
-Paid agent subscriptions route creator share (80%) via Stripe Connect `transfer_data`. Complete onboarding before publishing paid agents.
-
-### Start onboarding
+### Claim subscription earnings
 
 ```
-POST /api/v1/developers/stripe-connect/onboarding
+POST /api/v1/developers/claim-subscription-earnings
 ```
 
-Creates a Connect Express account when missing, then returns a hosted onboarding URL. Status updates via Stripe `account.updated` webhooks.
+Claims all claimable subscription earnings as USDC into your EchoZero wallet. Returns the total USD claimed and the number of ledger rows updated.
 
-### Check status
+Returns **400** when there is nothing to claim. Call `GET /earnings` first to check `fromSubscriptions.claimableUsd`.
 
-```
-GET /api/v1/developers/stripe-connect/summary
-```
-
-Returns Connect account status, USD balances, next payout estimate, lifetime paid payouts, and subscription MRR / churn metrics.
-
-### Dashboard link
-
-```
-POST /api/v1/developers/stripe-connect/dashboard-link
-```
-
-Returns a short-lived URL to the Stripe Express dashboard for tax forms and payout settings.
+<Warning>
+**Stripe Connect payouts are retired.** Subscribers still pay subscriptions by card, but your share is paid as USDC through the claim endpoint above. The old `/api/v1/developers/stripe-connect/*` routes return **410 Gone**. You do not need to onboard with Stripe.
+</Warning>
 
 ## Typical workflow
 
@@ -140,18 +132,18 @@ Returns a short-lived URL to the Stripe Express dashboard for tax forms and payo
   <Step title="Register as a developer">
     Complete developer registration in the [Dev Portal](https://devportal.echozero.app) or via `POST /api/v1/developers/register`.
   </Step>
-  <Step title="Set up Stripe Connect">
-    Call `POST /stripe-connect/onboarding` and complete the hosted flow before enabling paid subscriptions.
+  <Step title="Price your agent">
+    Set `pricingModel`, and `successFeePercent` (0-22) and/or `monthlyPrice`, when you create or update the agent.
   </Step>
   <Step title="Publish agents">
-    Create marketplace agents with subscription pricing. Subscriber payments flow through Connect.
+    Publish to the marketplace. See [Agent lifecycle](/guides/agent-lifecycle).
   </Step>
   <Step title="Monitor earnings">
-    Poll `GET /v1/developers/earnings` for claimable balances and `GET /payouts` for settlement history.
+    Poll `GET /v1/developers/earnings` for claimable balances and `GET /v1/developers/payouts` for weekly settlement history.
   </Step>
   <Step title="Claim balances">
-    - Subscription ledger: `POST /claim-subscription-earnings`
-    - Strategy success fees: `POST /claims/agents/{agentId}` or `POST /claims/all`
+    - Success fees: `POST /claims/agents/{agentId}` or `POST /claims/all`
+    - Subscriptions: `POST /claim-subscription-earnings`
   </Step>
 </Steps>
 
@@ -162,5 +154,5 @@ Additional developer dashboard routes (subscribers, performance, signal history)
 ## Related guides
 
 - [Sandbox testing](/guides/sandbox) - test signal flows without affecting live subscribers
-- [Signal envelope](/guides/signal-envelope) - how signals become executable trades that generate success fees
+- [Signal envelope](/guides/signal-envelope) - how signals become executable trades
 - [Error codes](/guides/error-codes) - handling 400/404 claim errors and rate limits
