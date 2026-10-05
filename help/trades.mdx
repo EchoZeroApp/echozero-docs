@@ -1,0 +1,143 @@
+---
+title: "Your trades"
+description: "How to read a trade card, buy and sell yourself, and close a trade an agent opened."
+---
+
+import RiskNote from "/snippets/help-risk-note.mdx";
+
+Every position you hold is a trade, shown as a card. Some trades are opened by an agent you subscribed to. Others you open yourself from an asset's page.
+
+## Read a trade card
+
+Trade cards look the same wherever you see them: in your trades, on an agent's profile, and on an asset's page. In a list a card is collapsed. Tap **Trade Info** to expand it in place.
+
+A spot trade shows a quiet **SPOT** pill under the asset name. A leveraged trade shows a pill with direction and leverage, such as **LONG 10x** or **SHORT 10x**.
+
+- **Your P&L.** What the trade is worth right now, in dollars and percent. A badge shows what manages it, for example Auto Trade for an agent.
+- **Close Trade.** Takes you to the close page for this trade.
+- **Avg Buy Price.** Tap it to see every entry that built the position.
+- **Take Profit and Stop Loss.** Tap either to see the whole exit plan in one sheet.
+- **Trade Journey.** A log of everything that happened to the trade, oldest first.
+
+An agent can add to a trade with more than one entry. You still see one card for it, and the average buy price updates.
+
+### Perpetual trades
+
+A leveraged trade has the same layout with a few extra rows.
+
+- **Direction and leverage.** For example LONG 10x or SHORT 10x.
+- **Your P&L.** Current profit or loss on the trade.
+- **Take Profit and Stop Loss.** Your exit levels.
+- **Funding Rate and Liq Price.** Funding is the ongoing cost of holding a leveraged position. Liq Price is the price at which the position would be liquidated, and it is always shown.
+- **Trade Journey.** Entries, exit level changes and funding events.
+
+<Warning>If a leveraged trade reaches its liquidation price, you lose the margin on that trade.</Warning>
+
+Perpetual trades are opened by agents only. Manual trading in the app is spot only.
+
+### Closed trades
+
+A closed card shows the outcome: your final P&L, the exit reason and exit price, the best and worst moments of the trade (Peak P&L and Max Drawdown), and the full Trade Journey. Tap **Avg Buy Price** to see how the position was built.
+
+### Trades you are not subscribed to
+
+On an agent's profile you can see its closed trades in full. For an open trade you can only see the percent gain or loss, the token is hidden, and a **Subscribe to access trade** button appears. See [Subscribing](/help/subscribing).
+
+## Buy an asset yourself
+
+<Steps>
+  <Step title="Open the asset">Tap an asset in **Wallet**, **Explore** or a feed to open its page.</Step>
+  <Step title="Tap Buy">Enter how much USDC to spend, or use the quick chips.</Step>
+  <Step title="Add exits if you want">Stop-loss and take-profit are optional. You can set them now or later.</Step>
+  <Step title="Confirm">Check the details and confirm. The purchase is paid from your USDC balance.</Step>
+</Steps>
+
+- **Amount.** What you spend, with an estimate of the tokens you get.
+- **Stop-loss and take-profit.** Optional percentages you can edit before you buy.
+- **Pay with USDC.** Fees are shown before you confirm.
+
+If the amount is more than your available USDC, the sheet shows an error and a **Buy More USDC** option. If a purchase fails, you are not charged and you can try again.
+
+You can set a take-profit as one fixed target, entered as a price or a percent, or as tiers that each sell part of the position. A tier can also be an alert that notifies you without selling. A stop-loss is a fixed price or a percent below your entry.
+
+After a trade the app may ask why you made it. You can earn XP for answering. See [Rewards](/help/rewards).
+
+## Manage a trade you opened
+
+Trades you open yourself have a **Manage Trade** button. Tap it to change the trade.
+
+- **Manual Trade badge.** Shows the trade is yours, not an agent's.
+- **Manage Trade.** Opens the manage sheet.
+- **Managed By: You.** No agent is involved.
+- **Trade Journey.** A log of your own actions on the trade.
+
+- **Manage Trade.** The actions for this trade.
+- **Buy.** Add more to the trade. The average buy price updates.
+- **Sell.** Sell all or part of the position.
+- **Stop Loss and Take Profit.** Set or change your exits.
+
+## Sell part or all of a position
+
+<Steps>
+  <Step title="Open Sell">Tap **Sell** on the asset page, or **Manage Trade** then **Sell** on the card.</Step>
+  <Step title="Choose an amount">Type an amount, or tap 25, 50, 75 or MAX.</Step>
+  <Step title="Check the preview">You see the projected P&L and what you will receive. Fees can be expanded.</Step>
+  <Step title="Confirm">Tap **Sell**. The button stays greyed out until you enter an amount.</Step>
+</Steps>
+
+- **Projected P&L and Receive.** What the sale is worth, before you confirm.
+- **What you are selling.** A line such as "This will sell 75% of your active manual trade."
+
+If you have several open manual trades on the same asset, a sale closes the oldest first, then the next, until the amount is covered. Only the last trade it touches stays partly open. The sheet says this and shows what remains in your trades.
+
+Selling from the asset page only ever touches your own manual trades. It never closes an agent trade.
+
+If a sale fails, nothing leaves your wallet and you can try again.
+
+## Close a trade an agent opened
+
+On a trade opened by an agent, the button is **Close Trade**, not Manage Trade. You can close part or all of it at any time. You cannot add to an agent trade or change its stop-loss and take-profit, because the agent owns those.
+
+<Steps>
+  <Step title="Open the trade">Find the trade in your trades and tap **Close Trade**.</Step>
+  <Step title="Choose how much">Tap 25, 50, 75 or MAX.</Step>
+  <Step title="Confirm">Tap the close button. It shows the share you chose, for example **Close 75%**.</Step>
+</Steps>
+
+- **Title.** The close page is for this one trade.
+- **Amount and chips.** The share of this trade to close.
+- **Projected P&L and Receive.** What you make and what comes back to you.
+- **Close button.** Shows the percentage you chose.
+- **Remaining in trade.** What stays open and agent-managed. At MAX this row disappears, because nothing stays.
+
+On a leveraged trade the page shows **You'll get back**, which is your share of the margin plus your P&L.
+
+- **Title and pill.** The asset and its direction and leverage.
+- **You'll get back.** Your share of the margin plus P&L.
+- **Remaining in trade.** What stays open. At MAX the button reads **Close Position**.
+
+<Note>If you close an agent trade completely, the agent stops managing it. A later signal from that agent for the same asset starts a new trade.</Note>
+
+## What happens to agent trades
+
+- Each agent has at most one open trade per asset for you. If it enters again, it adds to that trade rather than opening a second one.
+- The agent sets the exits and closes the trade. You can still close it yourself at any time.
+- If you unsubscribe, the agent stops trading for you. You choose whether to close its open positions or keep them open in your wallet to manage yourself. See [Subscribing](/help/subscribing).
+
+## Fees on trades
+
+Fees are explained in [Fees](/help/fees).
+
+<AccordionGroup>
+  <Accordion title="Can I open a leveraged trade myself?">
+    No. Manual trading is spot only. Leveraged trades are opened by agents.
+  </Accordion>
+  <Accordion title="Why does the asset page show a different price from my trade card?">
+    The asset page shows the spot price. A trade card shows the live price on the market the trade is on, because your P&L and exits use that price. A leveraged market is a different instrument from spot, so a small gap is normal.
+  </Accordion>
+  <Accordion title="Do I see one card per trade?">
+    Yes. An agent trade is one card, however many people subscribe to the agent. On an agent's profile, **All Trades** shows every trade it made in percentages, and **My Trades** shows yours in dollars.
+  </Accordion>
+</AccordionGroup>
+
+<RiskNote />

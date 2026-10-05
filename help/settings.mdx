@@ -1,0 +1,101 @@
+---
+title: "Settings and security"
+description: "Manage your account, 2FA, keys, subscriptions and notifications, send feedback, or delete your account."
+---
+
+import RiskNote from "/snippets/help-risk-note.mdx";
+
+Open your profile and tap the gear to reach Settings. Everything about your account starts here.
+
+- **General.** Profile image, username, email and language.
+- **Wallet, Export keys.** Export your Solana private key to use in Phantom.
+- **Security.** Two-factor authentication and your signed-in devices.
+- **Notifications.** Push and email preferences.
+- **Submit feedback.** Report a bug or suggest a feature.
+- **Subscriptions.** View and cancel your agent subscriptions.
+- **Help.** Where to get support.
+
+## General
+
+In **General** you can add or remove a profile picture (5MB max) and see your username and email. You can also change the app language. Tap **Save** to keep your changes. This is also where you start [account deletion](#delete-your-account).
+
+## Turn on two-factor authentication (2FA)
+
+<Steps>
+  <Step title="Open Security">Go to **Settings**, then **Security**.</Step>
+  <Step title="Get an authenticator app">Download one, for example Google Authenticator.</Step>
+  <Step title="Add EchoZero">Scan the QR code, or type in the setup key instead.</Step>
+  <Step title="Confirm">Tap **Continue** and enter the 6-digit code from the app to switch 2FA on.</Step>
+</Steps>
+
+Once 2FA is on, you can require it for specific actions: logging in, removing a device and withdrawing tokens. You can turn 2FA off from the same screen.
+
+- **2FA status.** Whether two-factor authentication is on.
+- **Per-action requirements.** Choose which actions ask for a 2FA code.
+- **Disable 2FA.** Turns 2FA off.
+- **Active devices.** See where you are signed in. Revoke a device, or all except the one you are using.
+
+## Export your keys
+
+Your wallet is yours. You can export your Solana private key at any time and import it into Phantom to take full control.
+
+<Steps>
+  <Step title="Open Export keys">Go to **Settings**, then **Wallet** and **Export keys**.</Step>
+  <Step title="Verify it is you">Complete the verification step the app asks for.</Step>
+  <Step title="Reveal and copy">Tap the box to show your key, then copy it. Tap **CLOSE** when you are done.</Step>
+</Steps>
+
+- **Export private key.** Take your Solana key to Phantom.
+- **Safety warning.** Never share your key. Anyone with it can control the wallet.
+- **Reveal note.** Tap the box to show the key, and make sure nobody can see your screen.
+- **The key.** Hidden until you tap it. Copy it to your clipboard.
+
+<Warning>Anyone with your private key can take your funds. Never share it.</Warning>
+
+## Manage your subscriptions
+
+Go to **Settings**, then **Subscriptions**. Each paid agent you subscribe to shows its monthly price, success fee and next payment date.
+
+- **Cancellation terms.** Access continues until the paid period ends. There is no pro-rated refund.
+- **Subscription card.** Price, success fee and next payment date for one agent.
+- **CANCEL.** Cancel that one agent.
+- **Cancel all agent subscriptions.** Cancel every subscription at once.
+
+When you cancel, you choose what happens to the agent's open trades. **Keep them open** is the default. Your trades stay open and you can close them from your wallet whenever you like. **Close all trades** exits every open position at market. You can re-subscribe at any time.
+
+Cancelling settles any success fee due on profit above your all-time high with that agent. See [Fees](/help/fees) and [Subscribing](/help/subscribing).
+
+## Notifications
+
+Go to **Settings**, then **Notifications**. Choose what you get as push and as email. Each category has its own switch.
+
+- **Push notifications.** Alerts on your device, by category.
+- **Categories.** News and offers, Tips and help, Trade execution, Agent updates.
+- **Email notifications.** The same categories by email. Your weekly settlement receipt arrives here too.
+- **Always on.** Verification codes, deposit and withdrawal confirmations and critical alerts always send.
+
+## Send feedback
+
+Go to **Settings**, then **Submit feedback**.
+
+- **Report a bug.** Add the details and submit. You are notified as it progresses.
+- **Feature request.** Submit an idea with a title and description.
+
+## Delete your account
+
+Deleting your account cannot be undone in the app. EchoZero may keep some records where required for security, fraud prevention, legal or compliance reasons. You can only delete once you have unsubscribed from all agents and withdrawn your funds. Nothing is closed for you.
+
+<Steps>
+  <Step title="Start deletion">Go to **Settings**, then **General**, then **Delete account**.</Step>
+  <Step title="Enter your code">We email you a 6-digit verification code. Enter it.</Step>
+  <Step title="Confirm">Tick the box to confirm you understand the data loss, then tap **Verify** and finish the final step.</Step>
+</Steps>
+
+- **Warning.** Account deletion cannot be reversed in the app, and some records may be kept where required.
+- **Verification code.** The 6-digit code from your email.
+- **Confirm checkbox.** Acknowledge the permanent data loss.
+- **Verify.** Moves you to the final step.
+
+Need help? Tap **Help** in Settings, or see [Troubleshooting](/help/troubleshooting).
+
+<RiskNote />

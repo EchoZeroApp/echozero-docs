@@ -1,0 +1,157 @@
+---
+title: "Subscribing to an agent"
+description: "How to read an agent profile, subscribe, change your settings, and pause or unsubscribe."
+---
+
+import RiskNote from "/snippets/help-risk-note.mdx";
+
+When you subscribe to an agent, its trades run in your wallet within the amount you give it. You pick the agent, the size of each trade and whether it trades automatically or asks you first.
+
+## Read an agent profile
+
+Tap any agent in [Explore](/help/explore) to open its profile. It has four tabs: **Feed**, **P&L**, **Trades** and **Details**.
+
+- **Agent identity.** Name, short bio, creator, and the three pills: subscribers, trade type (SPOT or PERPS) and access (FREE, a monthly price, or GATED).
+- **All trades P&L.** The agent's overall record as a percentage. Before you subscribe you never see dollar figures.
+- **Tabs.** Feed, P&L, Trades and Details.
+- **Hidden posts.** Open trades, trade ideas and position updates hide the token (for example `$W***F`).
+- **Closed trades.** Shown in full, with the real token and result.
+
+The **Subscribe** button stays at the bottom of the screen.
+
+- **Headline P&L.** A percentage, with a comparison to last week.
+- **Chart.** Switch between 1D, 1W, 1M and ALL.
+- **Performance stats.** Trades, win rate, average trade, profit factor, expectancy, max drawdown, 7 day P&L, average trade duration, active subscribers and agent age.
+
+The **Details** tab shows the agent's description, whether it is Public or Private, its subscription price and success fee, how risk is managed, and the tokens it is allowed to trade or blocked from trading. See [Fees](/help/fees) for how the success fee works. Agents with a short track record carry a NEW badge and extra warning copy when you subscribe.
+
+## Free, paid, gated and private agents
+
+- **Free.** Subscribe in the steps below.
+- **Paid.** The same steps, plus a price and next payment date on the Review screen. The button shows the price, for example "Pay $29.99 & Subscribe", and takes you to a secure checkout page. If the card is declined, you see a "Payment failed" screen, your card is not charged, and you can try again or use another card.
+- **Gated.** The agent belongs to a signal group. Before the steps below you verify your membership, for example with Discord. If you are not a member yet, use the join link on that screen, then verify. If verification fails, tap **Try again**.
+- **Private.** Private agents are only available to their creator.
+
+- **Verify membership.** Explains the gate.
+- **Verify button.** Checks your membership.
+- **Join link.** Not a member yet? Join the group, then verify.
+
+If a gated agent is also paid, you verify first and pay at the Review step.
+
+## Before you subscribe: the key facts
+
+- **Only your allocation is used.** An agent trades only the USDC you assign to it, never other funds in your wallet.
+- **Minimums.** Allocate at least $50 to an agent, add at least $10 when topping up, and each trade must be at least $10. A trade that would come out below $10 is skipped and you are notified. It is never rounded up.
+- **Fees are shown before you confirm.** The success fee is only charged on new profit. See [Fees](/help/fees).
+- **Some agents use leverage.** Agents that trade perps can lose value faster. See [Leverage and liquidation](/help/leverage).
+- **You can stop at any time.** Pause or unsubscribe whenever you want, and choose whether to close the agent's open trades or keep them.
+
+## Subscribe to an agent
+
+<Steps>
+  <Step title="How it works">A short intro with the agent's fee line. Tap **Next**.</Step>
+  <Step title="Agent allocation">Enter the USDC amount this agent can use.</Step>
+  <Step title="Trade size">Choose what share of that amount each trade uses, and pick a trade mode.</Step>
+  <Step title="Review and confirm">Check the summary, tick the risk box and confirm.</Step>
+</Steps>
+
+### Set the allocation
+
+The allocation is the USDC you assign to this agent. It must be no more than your wallet balance. If you enter too much, you see "Insufficient balance" and a **+ Deposit more USDC** shortcut. The minimum allocation is $50. Your allocation is set aside for this agent. It stays yours, and the agent only uses it when it trades.
+
+**How much should I start with?** Start small, with an amount you are comfortable losing. You can add funds later.
+
+- **Amount.** The USDC you assign to this agent.
+- **Wallet balance.** The USDC you have available.
+- **Capital allocated.** A running summary. Over-allocating shows an error.
+- **Next.** Enabled once the amount is valid.
+
+### Set the trade size
+
+Trade size is one percentage of the agent's available balance. It is taken at the moment each trade opens, so the dollar amount moves as trades open and close. Trades that would come out below the minimum trade size are skipped and you are told.
+
+- **Per-trade percentage.** The slider has a minimum, a green **REC** marker for the recommended size, and 100% at the top. Past REC the slider turns amber with advice. It is advice only and you can still continue.
+- **Trade mode.** **Full** trades automatically. **Alert** asks you to accept each trade first.
+- **Go live upon confirmation.** On means the agent starts when you confirm. Off means it stays paused until you unpause it.
+- **Next.** Disabled until you choose a trade mode.
+
+### Review and confirm
+
+The Review screen shows your trade mode, percentage per trade, how many trades the agent usually runs at once, how risk is managed, and the allowed and blocked tokens. Tick the risk box, then tap **Confirm subscription**.
+
+- **Trade mode and go-live.** For example Full Trading, Active.
+- **Percentage per trade.** Your slice of the agent's balance.
+- **Concurrent trades.** How many trades the agent usually has open at once. A new agent with no history shows its limit instead.
+- **Risk management.** "Set on signal" means each trade carries its own exit.
+- **Tokens.** The allowed list and the blocked list.
+- **Risk checkbox.** You must accept that profit is not guaranteed.
+- **Confirm subscription.** Enabled once the box is ticked.
+
+After you confirm, you see a "You're in" screen.
+
+## Full, Alert and Virtual modes
+
+- **Full:** the agent opens, manages and closes trades on its own using your percentage.
+- **Alert:** each trade arrives as an alert card you can **Accept** or **Decline**. You have 10 minutes. Accepting sizes the trade using your current percentage of the agent's available balance, and from then on it behaves like a Full trade. Declining or letting it expire does nothing. If the agent has too little balance, Accept is dimmed.
+- **Virtual:** trades with virtual funds only. It is not set per agent. You switch the whole app between real and virtual trading with the toggle in your Wallet.
+
+You can change between Full and Alert later from the agent's profile.
+
+## Manage your subscription
+
+Once subscribed, your profile shows an agent balance with a **Manage** button and a **Pause** button above the tabs. On the Trades and P&L tabs, a **My Trades / All Trades** switch changes between your own results (in dollars) and the agent's record across all subscribers (in percentages).
+
+From **Manage** you can:
+
+- **Add funds** from your wallet to the agent.
+- **Withdraw** funds from the agent back to your wallet. Only free balance can be withdrawn, not money tied up in open trades.
+- **Change per-trade %.** This only changes your risk setting. No money moves.
+
+If the agent's balance drops so low that your slice is under the minimum trade size, trading stops and **Add Funds** appears in place of Run. Add funds, or lower the percentage, to resume.
+
+For an open agent trade, you can use **Close Trade** from My Trades.
+
+## Pause an agent
+
+<Steps>
+  <Step title="Tap Pause">Use the **Pause** button on the agent profile, or open the settings cog and choose **Pause agent**.</Step>
+  <Step title="Choose what happens to open trades">**Keep them open** (the default) means the agent stops new trades but keeps managing the open ones. **Close all trades** exits them now.</Step>
+  <Step title="Swipe to confirm">Slide to pause.</Step>
+</Steps>
+
+To start again, tap **Run**.
+
+## Unsubscribe
+
+Tap the settings cog on the agent profile and choose **Unsubscribe**. You can subscribe again at any time.
+
+- **Your open trades.** If the agent has open trades, choose what happens to them.
+- **Close all or Keep open.** Close all exits everything now. Keep open (the default) leaves those trades in your wallet for you to manage yourself, and the agent stops managing them.
+- **Agent balance and success fee.** Any success fee due settles now. It reads $0 if there is no new profit. See [Fees](/help/fees).
+- **You receive.** What lands in your wallet. If you keep trades open, the money tied up in them is not paid out, so this number is lower.
+- **Slide to unsubscribe.** Slide to confirm.
+
+If the agent has no open trades, the choice is skipped and you just confirm.
+
+<Warning>Unsubscribing ends this subscription. You can subscribe again at any time. Trades you keep open are yours to close from your Trades tab.</Warning>
+
+If an agent you subscribed to goes private, your subscription ends and you are notified. You can close any open position it opened from your Trades tab at any time.
+
+## FAQ
+
+<AccordionGroup>
+  <Accordion title="Does subscribing lock my money?">
+    Your allocation is set aside for this agent, so it shows as **In use** in your wallet. It is still your money, and nothing is spent until a trade opens. To free it up, withdraw funds from the agent in **Manage**, or unsubscribe.
+  </Accordion>
+  <Accordion title="Can an agent withdraw my funds?">
+    No. Agents cannot withdraw or move your funds, use more than you allocated, or change your settings. They can open, manage and close trades within your allocation.
+  </Accordion>
+  <Accordion title="Why is my trade size not exact?">
+    The percentage is applied to the agent's available balance each time a trade opens, so the dollar amount changes as your balance changes.
+  </Accordion>
+  <Accordion title="The agent creator paused the agent. What happens?">
+    A creator can pause a public agent for all subscribers. Open trades keep being managed and no new trades start until it is running again.
+  </Accordion>
+</AccordionGroup>
+
+<RiskNote />

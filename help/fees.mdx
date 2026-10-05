@@ -1,0 +1,82 @@
+---
+title: "Fees"
+description: "What EchoZero charges, when, and how the success fee is worked out."
+---
+
+import RiskNote from "/snippets/help-risk-note.mdx";
+
+There are no trading fees. You pay one success fee, and only when an agent makes you new profit above your all-time high with that agent. All fees are charged and settled in USDC.
+
+## The short version
+
+- **No trading fees. No per-trade fees. No fee on losses. Ever.**
+- You pay **one success fee**, only on profit above your all-time high with an agent.
+- The success fee is at most **30% of that new profit**. It is EchoZero's fixed **8% platform fee** plus the **creator's own fee**, which the creator sets between 0% and 22%.
+- It settles **weekly**. Withdrawing or unsubscribing settles any fee due at that moment.
+- Some agents also charge a **monthly subscription**, always shown before you subscribe.
+
+## How the success fee works
+
+**Your all-time high.** For each agent you subscribe to, EchoZero tracks the highest value your money with that agent has ever reached, after any fees. A success fee is only charged on profit above it. If your balance is at or below your all-time high, you pay nothing.
+
+**Weekly settlement.** Once a week, per agent, one of two things happens:
+
+- If your balance is above your all-time high, the success fee applies to the new profit only and is deducted. Your all-time high moves up to the new balance after the fee.
+- If your balance is at or below your all-time high, nothing is charged.
+
+**Catching up after a down week.** If you were below your high at a weekly settlement, nothing was charged. When your balance later climbs back above your all-time high, the fee on that new profit settles at that moment instead of waiting for the next week. The fee is on profit above your previous high, never on the recovery back up to it.
+
+**Deposits and withdrawals never count as profit.** If you add money, your all-time high rises by exactly that amount, so a deposit is never charged as a gain. If you withdraw part of your balance, your all-time high shrinks in proportion, and any success fee due on the withdrawn share settles then.
+
+**Leaving settles the fee.** When you withdraw everything or unsubscribe from an agent, any success fee due on profit above your all-time high settles before the funds move. If you are not above your high, nothing is charged.
+
+**Very small amounts roll forward.** Tiny fee amounts are skipped and stay in your balance until they are worth settling.
+
+## What the fee is made of
+
+The success fee on an agent is one number, for example "Success fee: 20%". It has two parts:
+
+- **EchoZero's platform fee: a fixed 8%** of new profit. This is the same on every agent, even if the creator charges 0%. Your rakeback comes out of this part. See [Rewards](/help/rewards).
+- **The creator's fee: 0% to 22%** of new profit, set by the agent's creator.
+
+Together they can never exceed 30% of your new profit. Both parts are shown before you subscribe.
+
+## Subscriptions
+
+Separately from the success fee, a creator can charge a monthly subscription for their agent. The creator sets the price and it is shown before you subscribe. Subscriptions are paid by card at checkout. The trading venues also have their own costs, covered below.
+
+## Worked examples
+
+These all use an agent with a 12% creator fee, so the total success fee is 20% (12% creator plus 8% platform). The numbers are illustrative.
+
+**A profitable week.** You subscribe with $1,000. A week later your balance is $1,100. Your new profit is $100, so the success fee is $20 ($12 to the creator, $8 to EchoZero). Your balance becomes $1,080 and your all-time high is now $1,080.
+
+**A down week, then recovery.** From $1,080 your balance drops to $1,020 at the next settlement. Nothing is charged. Over the following days it recovers to $1,080 and keeps climbing. You pay nothing on the climb from $1,020 back to $1,080. The fee only applies to profit above $1,080, and it settles as soon as your balance passes that mark.
+
+**A losing streak.** Your balance falls for three weeks in a row. You pay no EchoZero success fee.
+
+**A deposit.** Your all-time high with an agent is $1,080 and you add $500. Your high becomes $1,580. The $500 you added is never charged as profit.
+
+**Leaving with a gain.** Your all-time high is $1,080 and your balance is $1,130 when you unsubscribe. The success fee on the $50 of new profit ($10 in this example) settles as part of the exit, and the rest is yours.
+
+**Leaving with a loss.** Your balance is below your all-time high when you withdraw. Nothing is charged.
+
+## What you never pay
+
+- No EchoZero fee to open a trade, close a trade, or hold a position
+- No EchoZero fee on losing or breakeven trades
+- No fee while your balance is below your all-time high with an agent, including the whole climb back after a drawdown
+- No deposit fees
+
+## Other costs
+
+- **Trading venue costs.** The venues agents trade on charge their own fees: Jupiter routing and Solana network fees on spot, and Hyperliquid trading fees and funding on perpetual futures. These show up in your fill prices and P&L, and your all-time high is tracked on your balance after those costs.
+- **Withdrawals.** A small Solana network fee applies, shown before you confirm. See [Your wallet](/help/wallet).
+
+## Where the fees go
+
+- The creator keeps **100% of their creator fee**, the 0% to 22% they set.
+- EchoZero keeps the **8% platform fee**, and pays your rakeback out of it.
+- On subscriptions, the creator keeps **80%** and EchoZero takes a 20% platform cut from the creator's side. This never adds anything on top of the price the creator set.
+
+<RiskNote />

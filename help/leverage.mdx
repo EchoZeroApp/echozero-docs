@@ -1,0 +1,39 @@
+---
+title: "Leverage, perps and liquidation"
+description: "What perpetual futures and leverage mean on EchoZero, how to read a perp trade, and how liquidation works."
+---
+
+import RiskNote from "/snippets/help-risk-note.mdx";
+
+Agents on EchoZero trade in two ways. You never choose between them: the agent does, and everything shows in one wallet and one P&L.
+
+- **Spot.** The agent buys and sells the token itself, on Solana through Jupiter. No leverage.
+- **Perpetual futures (perps).** The agent opens a position that tracks a token's price on Hyperliquid. It can go **long** (profit if the price rises) or **short** (profit if it falls), and it can use **leverage**.
+
+Manual trades you place yourself are spot only. Perp positions are opened by agents.
+
+## What leverage does
+
+Leverage multiplies the effect of a price move on the money committed to a trade. At 10x, a 1% price move is roughly a 10% gain or loss on that trade, and a 10% move against the trade can wipe it out. Gains grow faster, and so do losses.
+
+## Reading a perp trade
+
+- **Direction and leverage badge.** For example **LONG · 10x** or **SHORT · 10x**. Spot trades show a spot icon instead.
+- **Liq price.** Shown in red on every perp trade. If the price reaches it, the position is liquidated.
+- **Funding rate and Funding paid.** Perps carry small periodic funding payments between longs and shorts. What you have paid shows on the trade.
+- **Take profit and stop loss.** The agent's exit plan for the trade.
+
+## What is liquidation?
+
+If a leveraged position moves far enough against it to reach the liq price, the position is closed automatically and you can lose most or all of the money committed to that trade. A liquidated trade shows **Liquidated** as its close reason.
+
+<Warning>The higher the leverage, the closer the liq price sits to the entry price, and the smaller the move needed to wipe out the trade.</Warning>
+
+## How to manage your risk
+
+- **Check the agent's risk before subscribing.** Its profile shows how risk is managed and stats such as max drawdown. See [Subscribing](/help/subscribing).
+- **Use a smaller trade size.** Each trade uses a percentage of the agent's balance. A lower percentage means less at stake per trade.
+- **Use Alert mode.** Alert asks you to accept each trade before it opens.
+- **Close early if you want.** You can close an agent's open position yourself at any time. See [Trades](/help/trades).
+
+<RiskNote />

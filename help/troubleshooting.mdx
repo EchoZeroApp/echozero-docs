@@ -1,0 +1,132 @@
+---
+title: "Troubleshooting and FAQ"
+description: "Answers to the most common questions about trades, deposits, withdrawals, login, fees and rewards."
+---
+
+import RiskNote from "/snippets/help-risk-note.mdx";
+
+If an answer says to contact support, use **Help** in Settings, our Discord, or hello@echozero.app.
+
+**Jump to:** [Trades and agents](#trades-and-agents) · [Deposits and withdrawals](#deposits-withdrawals-and-your-funds) · [Account and access](#account-and-access) · [Fees](#fees) · [Rewards and XP](#rewards-and-xp) · [Safety](#safety)
+
+## Trades and agents
+
+<AccordionGroup>
+  <Accordion title="My trade was liquidated or lost more than I expected">
+    Agents that trade perps use leverage, which makes losses grow faster. A perp trade that reaches its liq price is closed automatically and shows **Liquidated** as its close reason. See [Leverage and liquidation](/help/leverage).
+  </Accordion>
+  <Accordion title="My agent got a signal but no trade executed">
+    Check these in order:
+
+    1. **Is the agent paused?** Either by you, or globally by its creator. Paused agents skip new signals.
+    2. **Are you in ALERT mode?** Nothing executes until you tap ACCEPT on the recommendation in your [Inbox](/help/inbox).
+    3. **Do you have enough balance?** The agent needs your per-trade allocation available in USDC.
+    4. **Are you in VIRTUAL mode?** The trade used virtual funds, so check the virtual view.
+    5. **Is that market restricted in your region?** Some agent types are unavailable in some regions. See [Regions](/help/regions).
+  </Accordion>
+  <Accordion title="My agent shows as paused and I did not pause it">
+    A creator can pause a public agent for all subscribers, usually for maintenance or market conditions. You will be notified. Your open positions are still managed, and you can close them yourself at any time with CLOSE TRADE.
+  </Accordion>
+  <Accordion title="I unsubscribed but I still have an open trade">
+    When you unsubscribe you choose whether to keep trades open or close them. If you kept them open, the agent stops managing them from that moment. Close them any time from the Wallet Trades tab. See [Trades](/help/trades) and [Settings](/help/settings).
+
+    Unsubscribing also settles any success fee due on profit above your all-time high with that agent. If you were not in new profit, nothing is charged.
+  </Accordion>
+  <Accordion title="I cannot see an agent's open trades">
+    Open trades, ideas and live position updates are visible to subscribers only. Closed trades are public. Subscribe (VIRTUAL mode works) to see live activity. See [Subscribing](/help/subscribing).
+  </Accordion>
+  <Accordion title="I traded in virtual mode by mistake, or thought virtual was real">
+    Virtual mode turns the interface pink and shows an ADD VIRTUAL FUNDS button. Real mode never does. Virtual trades never touch real funds, and real trades never touch virtual funds. Check which mode the trade shows in your history, and check which mode you subscribed in. Subscriptions belong to one mode.
+  </Accordion>
+</AccordionGroup>
+
+## Deposits, withdrawals and your funds
+
+<AccordionGroup>
+  <Accordion title="My deposit is not showing up">
+    Check the transaction on a Solana explorer against your deposit address. Also confirm you sent USDC on the Solana network, because assets sent on other networks will not arrive.
+
+    - Confirmed on-chain but not in the app: wait a few minutes, then contact support with the transaction signature.
+    - Not confirmed: the issue is with the sending wallet or exchange.
+
+    See [Wallet](/help/wallet).
+  </Accordion>
+  <Accordion title="My withdrawal is pending">
+    Use the VIEW TRANSACTION link on the withdrawal screen to check its on-chain status. Solana confirmations are usually fast. If the transaction is confirmed but the destination wallet shows nothing, refresh that wallet's token list. If there is no transaction link and the withdrawal has been pending for a long time, contact support.
+  </Accordion>
+  <Accordion title="My withdrawal failed">
+    A failed withdrawal shows a red cross, and no funds left your wallet. Check the amount is within your available balance and the address is a Solana address, then try again. If it keeps failing, contact support. See [Wallet](/help/wallet).
+  </Accordion>
+  <Accordion title="I sent funds to the wrong network or address">
+    Only USDC sent on the Solana network to your deposit address arrives in EchoZero. Blockchain transactions cannot be reversed, so funds sent on another network or to a wrong address may not be recoverable. Contact support with the transaction details and we will tell you what can be checked.
+  </Accordion>
+  <Accordion title="How do I move my funds out entirely?">
+    You have two options, and both are available any time:
+
+    - Withdraw USDC to any Solana address from the Wallet tab.
+    - Export your keys (Settings, Export keys, protected by verification) and import your wallet into Phantom. See [Settings](/help/settings).
+
+    Withdrawing or unsubscribing settles any success fee due on profit above your all-time high first. If you are not in new profit, nothing is charged on the way out.
+  </Accordion>
+</AccordionGroup>
+
+## Account and access
+
+<AccordionGroup>
+  <Accordion title="I cannot log in">
+    - **No verification code:** check spam, and confirm the email is the one you registered with.
+    - **Social login (Google, Apple, Facebook):** pick the same provider you signed up with. An email account and a Google account with the same address are different logins.
+    - **2FA problems:** use the current code from your authenticator app. Codes expire quickly.
+    - **Still stuck:** contact support from your registered email.
+  </Accordion>
+  <Accordion title="EchoZero says it is not available in my region">
+    EchoZero is currently unavailable in the US, UK, Ontario and sanctioned territories, and some features are restricted in other regions. See [Regions](/help/regions). If you think your location is detected incorrectly, contact support.
+  </Accordion>
+</AccordionGroup>
+
+## Fees
+
+<AccordionGroup>
+  <Accordion title="Why did I pay a success fee?">
+    Because an agent made you new profit: your balance with it went above your all-time high with that agent. The fee applies to the new profit only, at the rate shown before you subscribed (the creator's fee of 0% to 22% plus EchoZero's fixed 8% platform fee, at most 30% in total). It settles weekly, and also when you withdraw or unsubscribe. You never pay it on losses or on the recovery back up to a previous high. See [Fees](/help/fees).
+  </Accordion>
+  <Accordion title="My fees look wrong">
+    There are no per-trade fees on EchoZero, so individual trades never carry a fee line. What you may see instead:
+
+    - **A success fee settlement.** Once a week per agent, if your balance is above your all-time high with that agent, the fee applies to the new profit only. Many weeks it is zero.
+    - **A fee at an unusual moment.** Withdrawing or unsubscribing settles any fee due at that point. If you were below your high at a weekly settlement, the fee on new profit settles as soon as your balance climbs back above your all-time high.
+
+    If a settlement still looks wrong, contact support. Every fee is charged in USDC and itemized. See [Fees](/help/fees).
+  </Accordion>
+  <Accordion title="I was charged a fee on a losing trade">
+    Losing trades never pay a fee on EchoZero, and neither do winning trades on their own. The only fee is the success fee on new profit above your all-time high with an agent. A charge near a losing trade is almost always a settlement of earlier profit: a weekly settlement, a catch-up after a down period, or an exit settlement from a withdrawal or unsubscribe. If a charge still looks wrong, contact support with the details.
+  </Accordion>
+</AccordionGroup>
+
+## Rewards and XP
+
+<AccordionGroup>
+  <Accordion title="My rakeback or referral reward looks too small or missing">
+    - Rakeback is a share of the 8% platform fee portion of the success fees you paid. It is not a share of your volume or profit. It only builds up when a success fee settles, so a week with no new profit highs means no rakeback.
+    - Referral commission is a share of the platform fee revenue from your referrals (10% to 20% by tier). It only flows after your referral qualifies, and it is released after a further retention period. Check each referral's status on the Earn tab.
+    - These are different streams. You earn rakeback on your own fees and referral commission on your referrals' fees, never rakeback on someone else's trading.
+
+    See [Rewards](/help/rewards).
+  </Accordion>
+  <Accordion title="My XP did not increase after trading">
+    Common reasons: very short holds and stablecoin pairs earn reduced Trading XP, round trips earn none, or you reached the 2,500 per day trading cap or the 3,000 per day overall cap. See [Rewards](/help/rewards).
+  </Accordion>
+</AccordionGroup>
+
+## Safety
+
+<AccordionGroup>
+  <Accordion title="Someone messaged me claiming to be EchoZero support">
+    EchoZero will never ask for your private key, 2FA codes or verification codes. Do not reply or click their links. See [Scams and account security](/help/safety).
+  </Accordion>
+  <Accordion title="I think someone else has access to my account">
+    Revoke all other devices in **Settings**, **Security**, turn on 2FA for withdrawals, and contact us at hello@echozero.app. Step-by-step: [If you think your account is at risk](/help/safety#if-you-think-your-account-is-at-risk).
+  </Accordion>
+</AccordionGroup>
+
+<RiskNote />
