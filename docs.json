@@ -127,11 +127,11 @@
       {
         "tab": "Help Center",
         "groups": [
-          { "group": "Start here", "pages": ["help/index", "help/getting-started", "help/wallet"] },
-          { "group": "Using agents", "pages": ["help/explore", "help/subscribing", "help/trades", "help/leverage"] },
+          { "group": "Start here", "pages": ["help/index", "help/getting-started", "help/wallet", "help/safety"] },
+          { "group": "Using agents", "pages": ["help/explore", "help/subscribing", "help/leverage", "help/trades"] },
           { "group": "Money and rewards", "pages": ["help/fees", "help/rewards"] },
-          { "group": "Your account", "pages": ["help/safety", "help/inbox", "help/settings", "help/regions"] },
-          { "group": "More help", "pages": ["help/creators", "help/troubleshooting"] }
+          { "group": "Your account", "pages": ["help/inbox", "help/settings", "help/regions"] },
+          { "group": "More help", "pages": ["help/glossary", "help/creators", "help/troubleshooting"] }
         ]
       },
       {

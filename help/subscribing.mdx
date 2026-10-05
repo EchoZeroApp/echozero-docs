@@ -28,7 +28,7 @@ The **Details** tab shows the agent's description, whether it is Public or Priva
 ## Free, paid, gated and private agents
 
 - **Free.** Subscribe in the steps below.
-- **Paid.** The same steps, plus a price and next payment date on the Review screen. The button reads "Pay and Subscribe" and takes you to a secure checkout page. If the card is declined, you see a "Payment failed" screen, your card is not charged, and you can try again or use another card.
+- **Paid.** The same steps, plus a price and next payment date on the Review screen. The button shows the price, for example "Pay $29.99 & Subscribe", and takes you to a secure checkout page. If the card is declined, you see a "Payment failed" screen, your card is not charged, and you can try again or use another card.
 - **Gated.** The agent belongs to a signal group. Before the steps below you verify your membership, for example with Discord. If you are not a member yet, use the join link on that screen, then verify. If verification fails, tap **Try again**.
 - **Private.** Private agents are only available to their creator.
 
@@ -41,7 +41,7 @@ If a gated agent is also paid, you verify first and pay at the Review step.
 ## Before you subscribe: the key facts
 
 - **Only your allocation is used.** An agent trades only the USDC you assign to it, never other funds in your wallet.
-- **Minimum trade size is $10.** A trade that would come out below it is skipped and you are notified. It is never rounded up.
+- **Minimums.** Allocate at least $50 to an agent, add at least $10 when topping up, and each trade must be at least $10. A trade that would come out below $10 is skipped and you are notified. It is never rounded up.
 - **Fees are shown before you confirm.** The success fee is only charged on new profit. See [Fees](/help/fees).
 - **Some agents use leverage.** Agents that trade perps can lose value faster. See [Leverage and liquidation](/help/leverage).
 - **You can stop at any time.** Pause or unsubscribe whenever you want, and choose whether to close the agent's open trades or keep them.
@@ -57,7 +57,9 @@ If a gated agent is also paid, you verify first and pay at the Review step.
 
 ### Set the allocation
 
-The allocation is the USDC you assign to this agent. It must be no more than your wallet balance. If you enter too much, you see "Insufficient balance" and a **+ Deposit more USDC** shortcut. Your allocation is reserved for this agent. It stays yours, and the agent only uses it when it trades.
+The allocation is the USDC you assign to this agent. It must be no more than your wallet balance. If you enter too much, you see "Insufficient balance" and a **+ Deposit more USDC** shortcut. The minimum allocation is $50. Your allocation is set aside for this agent. It stays yours, and the agent only uses it when it trades.
+
+**How much should I start with?** Start small, with an amount you are comfortable losing. You can add funds later.
 
 - **Amount.** The USDC you assign to this agent.
 - **Wallet balance.** The USDC you have available.
@@ -131,7 +133,7 @@ Tap the settings cog on the agent profile and choose **Unsubscribe**. You can su
 
 If the agent has no open trades, the choice is skipped and you just confirm.
 
-<Warning>Unsubscribing cannot be undone, but you can subscribe again later. Trades you keep open are yours to close from your Trades tab.</Warning>
+<Warning>Unsubscribing ends this subscription. You can subscribe again at any time. Trades you keep open are yours to close from your Trades tab.</Warning>
 
 If an agent you subscribed to goes private, your subscription ends and you are notified. You can close any open position it opened from your Trades tab at any time.
 
@@ -139,7 +141,7 @@ If an agent you subscribed to goes private, your subscription ends and you are n
 
 <AccordionGroup>
   <Accordion title="Does subscribing lock my money?">
-    No. Subscribing reserves an allocation for the agent. It is still your money, and nothing is spent until a trade opens.
+    Your allocation is set aside for this agent, so it shows as **In use** in your wallet. It is still your money, and nothing is spent until a trade opens. To free it up, withdraw funds from the agent in **Manage**, or unsubscribe.
   </Accordion>
   <Accordion title="Can an agent withdraw my funds?">
     No. Agents cannot withdraw or move your funds, use more than you allocated, or change your settings. They can open, manage and close trades within your allocation.
