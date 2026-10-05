@@ -1,0 +1,151 @@
+---
+title: "Your wallet"
+description: "How to read your balance, check your trades and activity, and deposit or withdraw USDC."
+---
+
+The **Wallet** tab is your home base. You get one balance in dollars, backed by USDC, and everything you do with your money starts here. Your wallet is created for you when you sign up, and you can export your keys any time from **Settings**.
+
+## Read your balance
+
+<Frame caption="The Wallet tab">
+  <img src="/help/images/w-main.jpg" alt="Wallet tab showing the dollar balance and the Total, In use and Available figures" style={{ maxWidth: "320px" }} />
+</Frame>
+
+1. **Your balance.** One dollar figure for everything you hold.
+2. **Total, In use, Available.** Total is the value of everything you hold. In use is money you have put to work with agents, plus money tied up in open manual trades. Available is Total minus In use, and it is what you can withdraw right now.
+3. **Search.** Type a token name to narrow your list as you type.
+
+<Note>Your balance is one number, whatever your agents are trading.</Note>
+
+## Tokens, Trades and Activity
+
+The wallet has three tabs.
+
+- **Tokens** shows what you hold.
+- **Trades** lists your positions.
+- **Activity** is the record of everything that moved your money.
+
+### Tokens
+
+<Frame caption="The Tokens tab">
+  <img src="/help/images/w-tokens.jpg" alt="Tokens tab listing holdings with live price and value" style={{ maxWidth: "320px" }} />
+</Frame>
+
+1. **Search.** Filter your holdings by token.
+2. **Token and live price.** Each token shows its current price.
+3. **Your holding.** The dollar value and amount you hold. You get one row per token, even if several trades built it.
+
+Tap a token to open its page, where you can see the individual trades behind that holding.
+
+### Trades
+
+Each row shows the token, the entry price and live price, your profit or loss in dollars and percent, whether the trade is open or closed, and how long it has been running. Tap **TRADE INFO** on a row to see the full detail. Use the search field to find a trade by token name, or the filter icon to narrow by result (Win or Loss), type (Long, Short or Spot) and status (Open or Closed). With nothing selected, every trade shows. See [Trades](/help/trades) for more.
+
+### Activity
+
+<Frame caption="The Activity tab">
+  <img src="/help/images/w-activity.jpg" alt="Activity tab listing deposits, trades, fees and rewards, newest first" style={{ maxWidth: "320px" }} />
+</Frame>
+
+Activity lists every event that moved your money, one line each, newest first.
+
+1. **Deposits and withdrawals.** Money in and out of your wallet.
+2. **Trades.** Bought, sold, opened, closed and manual exits, with the agent named underneath.
+3. **Fees.** A line appears when a success fee is settled. See [Fees](/help/fees).
+4. **Rewards.** Rewards you have claimed. See [Rewards](/help/rewards).
+
+Card payments for subscriptions do not appear here. You will find those in the [Inbox](/help/inbox) and under **Settings**, **My Subscriptions**.
+
+## Deposit USDC
+
+<Steps>
+  <Step title="Open Wallet">Tap **Wallet** in the bottom bar, then tap **Deposit**.</Step>
+  <Step title="Send USDC on Solana">Scan the QR code or copy your address, then send USDC from your other wallet or exchange. Choose the **Solana** network.</Step>
+  <Step title="Wait for it to land">Your balance updates once the transaction confirms, usually within seconds to a couple of minutes.</Step>
+</Steps>
+
+<Frame caption="The deposit sheet">
+  <img src="/help/images/w-deposit.jpg" alt="Deposit USDC sheet with QR code and wallet address" style={{ maxWidth: "320px" }} />
+</Frame>
+
+1. **Your QR code.** It holds your own wallet address.
+2. **Your address.** Tap to copy the full address.
+3. **Network warning.** Only send USDC on Solana. Tokens sent on other networks will not arrive.
+4. **Minimum.** The minimum deposit is 1 USDC. Amounts below it are lost.
+
+<Warning>Double-check the address and the network before you send. A deposit sent the wrong way cannot be recovered by the app.</Warning>
+
+## Withdraw USDC
+
+<Steps>
+  <Step title="Open Wallet">Tap **Wallet**, then tap **Withdraw**.</Step>
+  <Step title="Enter an amount">Type an amount, or tap **25**, **50**, **75** or **MAX** to use a share of what is available. The minimum is 1 USDC.</Step>
+  <Step title="Paste a Solana address">Paste the address you are sending to. It must be a Solana address.</Step>
+  <Step title="Check the network fee">A small Solana network fee is shown before you send.</Step>
+  <Step title="Tap WITHDRAW">The button only works once the amount and address are valid.</Step>
+</Steps>
+
+<Frame caption="Entering an amount and address">
+  <img src="/help/images/wd-enter.jpg" alt="Withdraw screen with amount, quick size buttons and address field" style={{ maxWidth: "320px" }} />
+</Frame>
+
+1. **Available.** The most you can withdraw right now, in USDC.
+2. **Quick sizes.** 25, 50, 75 or MAX of your available balance.
+3. **Address.** Where the money goes.
+4. **WITHDRAW.** Sends the withdrawal.
+
+You can withdraw whatever is available, even while an agent has open trades. Money tied up in an open trade becomes available when that trade closes. If a success fee is due on profit when you withdraw, it is settled at that moment. See [Fees](/help/fees).
+
+### If the address is not valid
+
+If the address is not a valid Solana address, the address turns red, an **Incompatible address** message appears, and **WITHDRAW** stays greyed out until you fix it.
+
+<Frame caption="An invalid address">
+  <img src="/help/images/wd-invalid.jpg" alt="Withdraw screen with a red address and an Incompatible address message" style={{ maxWidth: "320px" }} />
+</Frame>
+
+1. **Red address.** The address you pasted is not valid.
+2. **Incompatible address.** Paste a Solana address instead. Do not use an address from another network.
+3. **WITHDRAW is off.** It turns on once the address is valid.
+
+### When it works
+
+<Frame caption="A completed withdrawal">
+  <img src="/help/images/w-withdraw.jpg" alt="Green success screen with the destination address and a View transaction link" style={{ maxWidth: "320px" }} />
+</Frame>
+
+1. **Destination.** A shortened copy of the receiving address, so you can check it.
+2. **View transaction.** Opens the record of the transfer on Solana.
+
+Tap **OK** to go back to your wallet.
+
+### When it fails
+
+<Frame caption="A failed withdrawal">
+  <img src="/help/images/wd-failed.jpg" alt="Red failure screen with a prompt to retry or contact support" style={{ maxWidth: "320px" }} />
+</Frame>
+
+1. **Red cross.** The withdrawal did not go through and no funds left your wallet.
+2. **Retry or contact support.** Try again, or reach support from **Settings**, **Help**, in Discord, or at support@echozero.app.
+
+Tap **OK** to go back to your wallet.
+
+## Common questions
+
+<AccordionGroup>
+  <Accordion title="My deposit has not arrived">
+    Check the transaction on a Solana explorer using your deposit address. If it is confirmed, allow a few minutes for the app to show it. If you sent a token other than USDC, or used a network other than Solana, contact support with the transaction ID.
+  </Accordion>
+  <Accordion title="My withdrawal says pending">
+    Most withdrawals confirm quickly. Tap **View transaction** to check the status. If it shows confirmed but the receiving wallet has not updated, the receiving wallet may need a refresh.
+  </Accordion>
+  <Accordion title="Where is my SOL balance?">
+    You trade in dollars, so you only see one balance. The app handles network fees for you.
+  </Accordion>
+  <Accordion title="Can I connect my own wallet?">
+    No. Your EchoZero wallet is created for you at signup so agents can trade for you around the clock. If you want full control of your funds, export your keys from **Settings** and import them into Phantom. See [Settings](/help/settings).
+  </Accordion>
+  <Accordion title="Is my money mixed with other users?">
+    No. Your balance stays in your own wallet and is never pooled with other users or with EchoZero.
+  </Accordion>
+</AccordionGroup>
