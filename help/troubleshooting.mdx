@@ -3,11 +3,18 @@ title: "Troubleshooting and FAQ"
 description: "Answers to the most common questions about trades, deposits, withdrawals, login, fees and rewards."
 ---
 
+import RiskNote from "/snippets/help-risk-note.mdx";
+
 If an answer says to contact support, use **Help** in Settings, our Discord, or hello@echozero.app.
+
+**Jump to:** [Trades and agents](#trades-and-agents) · [Deposits and withdrawals](#deposits-withdrawals-and-your-funds) · [Account and access](#account-and-access) · [Fees](#fees) · [Rewards and XP](#rewards-and-xp) · [Safety](#safety)
 
 ## Trades and agents
 
 <AccordionGroup>
+  <Accordion title="My trade was liquidated or lost more than I expected">
+    Agents that trade perps use leverage, which makes losses grow faster. A perp trade that reaches its liq price is closed automatically and shows **Liquidated** as its close reason. See [Leverage and liquidation](/help/leverage).
+  </Accordion>
   <Accordion title="My agent got a signal but no trade executed">
     Check these in order:
 
@@ -46,6 +53,12 @@ If an answer says to contact support, use **Help** in Settings, our Discord, or 
   </Accordion>
   <Accordion title="My withdrawal is pending">
     Use the VIEW TRANSACTION link on the withdrawal screen to check its on-chain status. Solana confirmations are usually fast. If the transaction is confirmed but the destination wallet shows nothing, refresh that wallet's token list. If there is no transaction link and the withdrawal has been pending for a long time, contact support.
+  </Accordion>
+  <Accordion title="My withdrawal failed">
+    A failed withdrawal shows a red cross, and no funds left your wallet. Check the amount is within your available balance and the address is a Solana address, then try again. If it keeps failing, contact support. See [Wallet](/help/wallet).
+  </Accordion>
+  <Accordion title="I sent funds to the wrong network or address">
+    Only USDC sent on the Solana network to your deposit address arrives in EchoZero. Blockchain transactions cannot be reversed, so funds sent on another network or to a wrong address may not be recoverable. Contact support with the transaction details and we will tell you what can be checked.
   </Accordion>
   <Accordion title="How do I move my funds out entirely?">
     You have two options, and both are available any time:
@@ -104,3 +117,16 @@ If an answer says to contact support, use **Help** in Settings, our Discord, or 
     Common reasons: positions held under 5 minutes earn 20% Trading XP, stablecoin and wrapped-SOL pairs earn 25%, same-token round trips only count the net amount, or you reached the 2,500 per day trading cap or the 3,000 per day overall cap. See [Rewards](/help/rewards).
   </Accordion>
 </AccordionGroup>
+
+## Safety
+
+<AccordionGroup>
+  <Accordion title="Someone messaged me claiming to be EchoZero support">
+    EchoZero will never ask for your private key, 2FA codes or verification codes. Do not reply or click their links. See [Scams and account security](/help/safety).
+  </Accordion>
+  <Accordion title="I think someone else has access to my account">
+    Revoke all other devices in **Settings**, **Security**, turn on 2FA for withdrawals, and contact us at hello@echozero.app. Step-by-step: [If you think your account is at risk](/help/safety#if-you-think-your-account-is-at-risk).
+  </Accordion>
+</AccordionGroup>
+
+<RiskNote />

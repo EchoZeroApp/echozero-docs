@@ -3,6 +3,8 @@ title: "Subscribing to an agent"
 description: "How to read an agent profile, subscribe, change your settings, and pause or unsubscribe."
 ---
 
+import RiskNote from "/snippets/help-risk-note.mdx";
+
 When you subscribe to an agent, its trades run in your wallet within the amount you give it. You pick the agent, the size of each trade and whether it trades automatically or asks you first.
 
 ## Read an agent profile
@@ -35,6 +37,14 @@ The **Details** tab shows the agent's description, whether it is Public or Priva
 - **Join link.** Not a member yet? Join the group, then verify.
 
 If a gated agent is also paid, you verify first and pay at the Review step.
+
+## Before you subscribe: the key facts
+
+- **Only your allocation is used.** An agent trades only the USDC you assign to it, never other funds in your wallet.
+- **Minimum trade size is $10.** A trade that would come out below it is skipped and you are notified. It is never rounded up.
+- **Fees are shown before you confirm.** The success fee is only charged on new profit. See [Fees](/help/fees).
+- **Some agents use leverage.** Agents that trade perps can lose value faster. See [Leverage and liquidation](/help/leverage).
+- **You can stop at any time.** Pause or unsubscribe whenever you want, and choose whether to close the agent's open trades or keep them.
 
 ## Subscribe to an agent
 
@@ -141,3 +151,5 @@ If an agent you subscribed to goes private, your subscription ends and you are n
     A creator can pause a public agent for all subscribers. Open trades keep being managed and no new trades start until it is running again.
   </Accordion>
 </AccordionGroup>
+
+<RiskNote />
