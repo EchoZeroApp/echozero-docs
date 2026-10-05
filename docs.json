@@ -168,12 +168,12 @@
         "header": "Support",
         "items": [
           {
-            "label": "developers@echozero.app",
-            "href": "mailto:developers@echozero.app"
+            "label": "App help: hello@echozero.app",
+            "href": "mailto:hello@echozero.app"
           },
           {
-            "label": "Status",
-            "href": "https://status.echozero.app"
+            "label": "Developers: developers@echozero.app",
+            "href": "mailto:developers@echozero.app"
           }
         ]
       },
