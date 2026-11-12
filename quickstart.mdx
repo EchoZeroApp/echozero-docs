@@ -175,7 +175,7 @@ Use [virtual wallet mode](/guides/sandbox) so test signals use simulated balance
 ```
 
 <Note>
-Known issue (EZD-66): a brand-new private webhook agent can currently return 404 instead of `outcome: matched`, because the signal endpoint does not find private agents yet. This is being fixed. If you see a 404 and the `agentId` in the URL is correct, that is the likely cause, not a signing mistake. The [sandbox endpoints](/guides/sandbox) work in the meantime.
+Known issue: a brand-new private webhook agent can currently return 404 instead of `outcome: matched`, because the signal endpoint does not find private agents yet. This is being fixed. If you see a 404 and the `agentId` in the URL is correct, that is the likely cause, not a signing mistake. The [sandbox endpoints](/guides/sandbox) work in the meantime.
 </Note>
 
 If you get `outcome: skipped`, read `skipReason`. See [Error codes](/guides/error-codes).

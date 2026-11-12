@@ -162,7 +162,7 @@ You received `outcome: matched` and a `signalId`. That is the success moment.
 If the agent's status does not allow execution you may see `outcome: skipped` with a `skipReason` such as `agent_status_blocked`.
 
 <Note>
-Known issue (EZD-66): a brand-new private webhook agent can currently return 404 instead of `outcome: matched`, because the signal endpoint does not find private agents yet. This is being fixed. If you see a 404 and the `agentId` in the URL is correct, that is the likely cause, not a signing mistake. The [sandbox endpoints](/guides/sandbox) work in the meantime.
+Known issue: a brand-new private webhook agent can currently return 404 instead of `outcome: matched`, because the signal endpoint does not find private agents yet. This is being fixed. If you see a 404 and the `agentId` in the URL is correct, that is the likely cause, not a signing mistake. The [sandbox endpoints](/guides/sandbox) work in the meantime.
 </Note>
 
 ## 5. Send a lifecycle partial sell (optional)
