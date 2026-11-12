@@ -16,7 +16,7 @@ EchoZero REST responses use a consistent envelope. MCP protocol errors use JSON-
 }
 ```
 
-Paginated endpoints wrap items in `data` with `meta` (page, limit, total).
+Paginated endpoints return `data.items` and `data.pagination`. See [API conventions](/guides/conventions#pagination).
 
 ### Error
 
@@ -25,10 +25,20 @@ Paginated endpoints wrap items in `data` with `meta` (page, limit, total).
   "success": false,
   "error": {
     "code": "UNAUTHORIZED",
-    "message": "Missing or invalid API key"
+    "message": "Missing API key"
   }
 }
 ```
+
+Other examples of the same envelope:
+
+```json
+{ "success": false, "error": { "code": "UNAUTHORIZED", "message": "Invalid or expired API key" } }
+{ "success": false, "error": { "code": "NOT_FOUND", "message": "Developer agent not found" } }
+{ "success": false, "error": { "code": "BAD_REQUEST", "message": "<validator messages, comma-joined>" } }
+```
+
+`error.field` names the offending setting where the API can tell, for example on persona saves. Match on `error.code` and the HTTP status. The `message` text can change.
 
 The `code` field is derived from the HTTP status:
 
@@ -60,6 +70,8 @@ Validation errors on **400** may include a comma-joined message from field valid
 
 | Message | Cause |
 | --- | --- |
+| `Missing API key` | No `x-api-key` or bearer token was sent |
+| `Invalid or expired API key` | The key is wrong, revoked or expired |
 | `Missing x-timestamp header` | `x-signature` sent without `x-timestamp` |
 | `Invalid x-timestamp value` | Non-numeric timestamp |
 | `Request timestamp expired (drift exceeds 5 minutes)` | Clock skew on REST HMAC |
@@ -98,7 +110,7 @@ MCP routes (`POST /mcp`, `GET /mcp/sse`) return JSON-RPC errors instead of the R
   "jsonrpc": "2.0",
   "error": {
     "code": -32001,
-    "message": "Missing or invalid API key"
+    "message": "Missing API key"
   },
   "id": null
 }
@@ -129,10 +141,13 @@ Inbound signal webhooks return **200** with an `outcome` field even when no trad
 | --- | --- |
 | `matched` | Signal parsed and accepted for processing |
 | `unmatched` | Parser could not match the message |
+| `failed` | The `text` could not be parsed |
 | `skipped` | Intentionally skipped (e.g. non-entry action, eligibility) |
 | `error` | Processing error - check `skipReason` |
 
-Treat `skipped` and `unmatched` as non-retryable unless you change the payload.
+The response can also carry `rejection` (why a `caption` you wrote was not published) and `executionResult` (when execution completed). All of these come back with HTTP 200, so check `outcome`.
+
+Treat `skipped`, `unmatched` and `failed` as non-retryable unless you change the payload.
 
 ## Signal validation errors (HTTP 400)
 
@@ -149,7 +164,7 @@ Treat `skipped` and `unmatched` as non-retryable unless you change the payload.
 | `skipReason` | Retryable? | Meaning |
 | --- | --- | --- |
 | `parser_unmatched` | No | NL text did not match grammar |
-| `agent_status_blocked` | No | Agent not `beta`/`public` |
+| `agent_status_blocked` | No | The agent's status does not currently allow execution. Check the agent and its `listingStatus` |
 | `agent_paused` | No | Agent paused |
 | `token_unresolved` | No | Could not map ticker |
 | `token_not_supported` | No | Token not on execution venue |
@@ -169,7 +184,7 @@ Treat `skipped` and `unmatched` as non-retryable unless you change the payload.
 | `hyperliquid_not_available_in_virtual_mode` | No | Use live mode for perps |
 | `sell_not_available_in_virtual_mode` | No | Virtual mode limitation |
 
-Full registry: see `ingestReasons.ts` in the backend.
+The list above is a selection. New `skipReason` values can be added without notice (see the [versioning policy](/guides/versioning)), so treat an unknown reason as non-retryable and log it. A full public registry is not published yet.
 
 ## Retry guidance
 
@@ -184,6 +199,6 @@ Full registry: see `ingestReasons.ts` in the backend.
 ## Debugging tips
 
 - Compare your string-to-sign against the SDK's `signRestRequest` output for REST HMAC.
-- For inbound webhooks, verify canonical JSON key ordering matches `stableJson` in echozero-sdk.
+- For inbound webhooks, check your canonical JSON against the [test vectors](/guides/signature-test-vectors) and the public [SDK source](https://github.com/EchoZeroApp/echozero-sdk).
 - Check `X-RateLimit-Remaining` before bulk operations.
 - Use `GET /status` to verify OAuth tokens without hitting scoped routes.

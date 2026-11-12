@@ -327,7 +327,7 @@ Standard MCP envelope. Typical `data` fields:
 
 | HTTP | Cause |
 | --- | --- |
-| 401 | Invalid HMAC signature or clock skew |
+| 401 | Invalid HMAC signature or clock skew. Body: `{ "success": false, "error": { "code": "UNAUTHORIZED", "message": "..." } }` |
 | 404 | Unknown agent or agent not eligible for webhook ingress. Body: `{ "success": false, "error": { "code": "NOT_FOUND", "message": "..." } }` |
 | 400 | Validation error (missing `reasoning`, invalid `eventType`, a `relatedTradeId` that is not a closed trade of this agent, etc.). Body uses the same error envelope, and `error.field` names the field where the API can tell. See [Error codes](/guides/error-codes) |
 
