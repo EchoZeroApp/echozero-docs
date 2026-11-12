@@ -25,7 +25,7 @@ Signal-group agents (`signalSourceKind: signal_group`) are for **Telegram channe
     }'
     ```
 
-    `name` is 20 characters at most. `agentVenue` is `JUPITER` (Solana spot) or `HYPERLIQUID` (perpetuals) and **cannot be changed after creation**. For Hyperliquid also send `"signalExecutionDefaults": { "marketType": "perpetual" }`; see the [Hyperliquid recipe](/recipes/hyperliquid-perp).
+    `name` is 20 characters at most. `agentVenue` is `JUPITER` (Solana spot) or `HYPERLIQUID` (perpetuals) and **cannot be changed after creation**. For Hyperliquid also include `"signalExecutionDefaults": { "marketType": "perpetual" }` (the spec says it is derived from the venue, but older builds rejected creates without it); the `ez` helper also sends the `x-ez-mcp-client` header that the spec lists for create. See the [Hyperliquid recipe](/recipes/hyperliquid-perp).
   </Step>
   <Step title="Get bot metadata">
     ```bash

@@ -7,7 +7,7 @@ description: Dated API and documentation changes for EchoZero developers.
 
 - **Listing:** the agent beta stage is removed. `isPublic: true` now asks for a marketplace listing and starts a staff review; `listingStatus` shows the result (`pending-review`, `public`, `rejected`). `listingStatus` can only be changed by staff, and `betaStartDate` is ignored. See [Agent lifecycle](/guides/agent-lifecycle)
 - **Pricing fields:** create and update take `marketplacePricingModel`, `marketplaceMonthlyPrice` and `marketplaceSuccessFeePercent` (0-22, default 20). Reads still return `pricingModel`, `monthlyPrice` and `successFeePercent`. See [Earnings and payouts](/guides/earnings)
-- **Venue:** agents are created with an `agentVenue` (`JUPITER` or `HYPERLIQUID`) that cannot be changed afterwards. Hyperliquid agents also need `signalExecutionDefaults.marketType` set to `perpetual` on create. Agent names are 20 characters at most
+- **Venue:** agents are created with an `agentVenue` (`JUPITER` or `HYPERLIQUID`) that cannot be changed afterwards. For Hyperliquid agents, include `signalExecutionDefaults.marketType` set to `perpetual` on create (older builds rejected the create without it). Agent names are 20 characters at most
 - **Owner stake:** agent responses include an `ownerStake` object. See [Agent lifecycle](/guides/agent-lifecycle#owner-stake)
 - **Personas:** new endpoints to read, validate, preview, save and roll back an agent's feed persona. See [Agent personas](/guides/personas)
 - **Signals:** `caption` is part of the signed fields. Results can be `failed` (text could not be parsed) and can include `rejection` and `executionResult`. See [Signal envelope](/guides/signal-envelope)

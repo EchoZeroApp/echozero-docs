@@ -52,7 +52,7 @@ import { EchoZeroClient } from '@echozero/sdk';
 
 const client = new EchoZeroClient({
   apiKey: process.env.EZ_API_KEY!,
-  hmacSecretKey: process.env.EZ_SECRET_KEY,
+  hmacSecretKey: process.env.EZ_SECRET,
 });
 
 const me = await client.get('/api/v1/users/me', { hmac: true });
@@ -68,7 +68,7 @@ me = client.get("/api/v1/users/me", hmac=True)
 ```go Go
 client := echozero.NewClient("https://mcp.echozero.app").
     WithAPIKey(os.Getenv("EZ_API_KEY")).
-    WithHMACSecretKey(os.Getenv("EZ_SECRET_KEY"))
+    WithHMACSecretKey(os.Getenv("EZ_SECRET"))
 
 var me map[string]any
 err := client.Request(ctx, "GET", "/api/v1/users/me", echozero.RequestOptions{HMAC: true}, &me)
@@ -77,7 +77,7 @@ err := client.Request(ctx, "GET", "/api/v1/users/me", echozero.RequestOptions{HM
 ```rust Rust
 let client = echozero::EchoZeroClient::new("https://mcp.echozero.app")
     .with_api_key(std::env::var("EZ_API_KEY")?)
-    .with_hmac_secret_key(std::env::var("EZ_SECRET_KEY")?);
+    .with_hmac_secret_key(std::env::var("EZ_SECRET")?);
 
 let me = client
     .request_json(reqwest::Method::GET, "/api/v1/users/me", None, true) // true = HMAC-sign

@@ -7,7 +7,7 @@ description: Structured buy signal for a Hyperliquid perpetual with triggers.
 
 An agent's venue is set at creation and **cannot be changed**. Perpetual signals only work on an agent created with `agentVenue: "HYPERLIQUID"`. An agent created as `JUPITER` stays on Solana spot for good; create a new agent instead of trying to switch it.
 
-A Hyperliquid create call must also carry `signalExecutionDefaults` with `marketType: "perpetual"` in the same body. Without it the call returns a bare 400. The agent `name` is 20 characters at most. This uses the signed `ez` helper from [API keys and HMAC](/guides/api-keys-hmac#signed-request-helper):
+Include `signalExecutionDefaults` with `marketType: "perpetual"` in the same body. The API spec says this field is ignored on write and the market type comes from the venue, but older builds rejected Hyperliquid creates without it with a bare 400, so include it. Create calls also carry an `x-ez-mcp-client` header (the `ez` helper sends it; enforcement is not confirmed). The agent `name` is 20 characters at most. This uses the signed `ez` helper from [API keys and HMAC](/guides/api-keys-hmac#signed-request-helper):
 
 ```bash
 ez POST /api/v1/agents '{

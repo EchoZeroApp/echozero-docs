@@ -38,7 +38,7 @@ Signal-group and webhook agents focus on **ingress + fan-out**. Strategies are o
 
 | Term | Meaning |
 | --- | --- |
-| `positionRef` | Trade id or the entry `idempotencyKey` for lifecycle events (sell, amend, cancel). `relatedTradeId` on a `trade_review` also accepts a `signalId`. Signal ids look like `sig_wh_<agentId>_<idempotencyKey>` |
+| `positionRef` | Trade id or the entry `idempotencyKey` for lifecycle events (sell, amend, cancel). A signal id is not accepted for `positionRef`. `relatedTradeId` on a `trade_review` also accepts a `signalId`. Signal ids look like `sig_wh_<agentId>_<idempotencyKey>` |
 | `idempotencyKey` | Stable dedupe key; **always send on every signal** for replay protection |
 | `isPublic` / `listingStatus` | `isPublic: true` asks for a marketplace listing. `listingStatus` shows where the review stands (`pending-review`, `public`, `rejected`) and only staff change it |
 | `agentVenue` | `JUPITER` (Solana spot) or `HYPERLIQUID` (perpetuals). Set at creation, never changes |
