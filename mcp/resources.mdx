@@ -24,7 +24,7 @@ MCP **resources** expose stable read-only snapshots assistants can fetch without
 
 ```bash
 curl -sS https://mcp.echozero.app/mcp \
-  -H "x-api-key: $EZ_API_KEY" \
+  -H "Authorization: Bearer $OAUTH_TOKEN" \
   -H "Content-Type: application/json" \
   -H "mcp-session-id: $MCP_SESSION_ID" \
   -d '{

@@ -89,6 +89,7 @@
               "guides/signature-test-vectors",
               "guides/sandbox",
               "guides/agent-lifecycle",
+              "guides/personas",
               "guides/signal-groups",
               "guides/mcp",
               "mcp/tools",
