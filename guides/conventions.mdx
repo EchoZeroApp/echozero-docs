@@ -24,7 +24,13 @@ Paginated lists:
 ```json
 {
   "success": true,
-  "data": { "items": [], "meta": { "page": 1, "limit": 25, "total": 100 } }
+  "data": {
+    "items": [],
+    "pagination": {
+      "total": 100, "limit": 20, "page": 1, "totalPages": 5,
+      "hasNextPage": true, "hasPreviousPage": false
+    }
+  }
 }
 ```
 
@@ -32,29 +38,28 @@ Errors: see [Error codes](/guides/error-codes).
 
 ## Pagination
 
-Query parameters on list endpoints:
+List responses return `data.items` and `data.pagination` (`total`, `limit`, `page`, `totalPages`, `hasNextPage`, `hasPreviousPage`). Not every list takes the same query parameters, so check the route in the API Reference:
 
-| Param | Default | Max | Description |
-| --- | --- | --- | --- |
-| `page` | `1` | - | 1-based page index |
-| `limit` | `25` | `100` | Page size |
-| `order` | `desc` | - | `asc` or `desc` |
-| `orderBy` | `createdAt` | - | Sort field (varies by endpoint) |
+| Family | How to page |
+| --- | --- |
+| `GET /api/v1/trades` | `offset` and `limit` (default 20, max 100), plus `orderBy`, `order` and `filter` |
+| Developer payouts, signal history, ingest log, sandbox signal history | The spec lists no paging parameters for these. Read `data.pagination.hasNextPage` and do not rely on `page` or `limit` unless the reference shows them |
+| Other lists | Use the query parameters shown for that route in the API Reference |
 
-Example paging loop:
+Example loop over trades:
 
 ```bash
-PAGE=1
+OFFSET=0
 while true; do
-  RESP=$(curl -sS "https://mcp.echozero.app/api/v1/trades?page=$PAGE&limit=100" \
-    -H "x-api-key: $EZ_API_KEY")
-  # process RESP.data.items
-  TOTAL=$(echo "$RESP" | jq '.data.meta.total')
-  LIMIT=$(echo "$RESP" | jq '.data.meta.limit')
-  if [ "$((PAGE * LIMIT))" -ge "$TOTAL" ]; then break; fi
-  PAGE=$((PAGE + 1))
+  RESP=$(ez GET "/api/v1/trades?offset=$OFFSET&limit=100")
+  # process .data.items
+  HAS_NEXT=$(echo "$RESP" | jq '.data.pagination.hasNextPage')
+  [ "$HAS_NEXT" = "true" ] || break
+  OFFSET=$((OFFSET + 100))
 done
 ```
+
+(`ez` is the signed helper from [API keys and HMAC](/guides/api-keys-hmac#signed-request-helper).)
 
 ## Rate limits
 

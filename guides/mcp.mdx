@@ -27,6 +27,14 @@ Send credentials on **every** MCP request, including the first `initialize`:
 
 REST HMAC headers (`x-signature`, `x-timestamp`) are **required** for API-key auth. See [API keys + HMAC](/guides/api-keys-hmac). JWT/OAuth session tokens are exempt.
 
+A request with no credential gets a JSON-RPC error, not the REST envelope:
+
+```json
+{ "jsonrpc": "2.0", "error": { "code": -32001, "message": "Missing API key" }, "id": null }
+```
+
+An unknown key gets `-32001` with `Invalid or expired API key`. See [Error codes](/guides/error-codes#mcp-json-rpc-errors).
+
 ## Session lifecycle
 
 <Steps>
@@ -91,16 +99,7 @@ curl -sS https://mcp.echozero.app/mcp \
 
 ## Tools, resources, and scopes
 
-Available MCP tools, resources, and prompts are **scope-gated** by the API key or OAuth token. Common scopes:
-
-| Scope | Capability |
-| --- | --- |
-| `read:agents` / `write:agents` | Agent management tools |
-| `read:wallet` / `write:wallet` | Wallet and balance tools |
-| `read:strategies` / `write:strategies` | Strategy configuration |
-| `read:trades` | Trade and signal history |
-| `read:tokens` | Token metadata |
-| `write:ai` | AI chat tools |
+Available MCP tools, resources, and prompts are **scope-gated** by the API key or OAuth token. The full scope list is in [Authentication overview](/guides/authentication#scopes); [MCP tools](/mcp/tools#scope-map) maps tool families to scopes.
 
 Tools forward to the same REST endpoints documented in the API Reference. Errors use JSON-RPC format - see [Error codes](/guides/error-codes).
 
@@ -115,24 +114,30 @@ For ChatGPT, Claude, Gemini, and other directory submissions:
 | MCP URL | `https://mcp.echozero.app/mcp` |
 | Authorize URL | `https://mcp.echozero.app/oauth/authorize` |
 | Token URL | `https://mcp.echozero.app/oauth/token` |
-| Scopes | From `/public/directory/{platform}/` manifests |
+| Scopes | From the manifest for your platform (see below) |
 
-Fetch connector metadata:
+Fetch connector metadata, which lists every manifest:
 
 ```
 https://mcp.echozero.app/public/index.json
 ```
 
+The manifests are individual files, for example:
+
+- `https://mcp.echozero.app/public/directory/chatgpt/ai-plugin.json`
+- `https://mcp.echozero.app/public/directory/claude/connector.json`
+- `https://mcp.echozero.app/public/directory/gemini/extension.json`
+
+There is no index page at `/public/directory/{platform}/`. Other platforms are listed in `index.json`.
+
 See the [OAuth guide](/guides/oauth) for the full PKCE flow.
 
-## Assistant setup (coming soon)
+## Assistant setup
 
-<Note>
-**Coming soon:** `npx skills add EchoZeroApp/skills` and `ez login` are not yet public. Use API keys or [OAuth](/guides/oauth) today.
-</Note>
+The `ez` CLI (`@echozero/ez` on npm) runs the OAuth sign-in and wires up your client:
 
 ```bash
-# When available:
-npx skills add EchoZeroApp/skills
-ez login
+npx @echozero/ez login --client claude    # or: codex, openclaw
 ```
+
+The skills pack (`EchoZeroApp/skills`) is not public yet. Until it is, use the CLI, [OAuth](/guides/oauth) or an API key.

@@ -23,7 +23,7 @@ pip install echozero
 ```
 
 ```bash Go
-go get github.com/EchoZeroApp/echozero-sdk/packages/go/echozero
+go get github.com/EchoZeroApp/echozero-sdk/packages/go@v0.2.0
 ```
 
 ```toml Rust
@@ -32,6 +32,10 @@ echozero = { version = "0.2", features = ["websocket"] }  # drop the feature if 
 ```
 
 </CodeGroup>
+
+<Note>
+The Go module lives in the `packages/go` sub-directory of the repo, so its tags look like `packages/go/v0.1.0` and `packages/go/v0.2.0`. `go get ...@v0.2.0` resolves to the `packages/go/v0.2.0` tag. Import it as `github.com/EchoZeroApp/echozero-sdk/packages/go/echozero`.
+</Note>
 
 <Note>
 Use **0.2.0 or later** for the WebSocket signal client. The 0.1.0 WebSocket client could not connect to the gateway.

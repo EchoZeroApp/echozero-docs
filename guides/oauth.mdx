@@ -102,25 +102,17 @@ curl -sS -X POST https://mcp.echozero.app/oauth/introspect \
   -d '{ "token": "'"$OAUTH_TOKEN"'" }'
 ```
 
-Returns `{ "active": true, "sub": "...", "client_id": "...", "scope": "...", "exp": ... }` when valid.
+It returns HTTP **201** (not 200) with the standard success envelope. For a valid token:
+
+```json
+{ "success": true, "data": { "active": true, "sub": "...", "client_id": "...", "scope": "...", "exp": 1790000000 } }
+```
+
+For an unknown or expired token, `data` is `{ "active": false }`.
 
 ## OAuth scopes
 
-Scopes map to API key permissions. Request only what your integration needs:
-
-| Scope | Access |
-| --- | --- |
-| `read:agents` / `write:agents` | List and manage developer agents |
-| `read:strategies` / `write:strategies` | Strategy configuration |
-| `read:wallet` / `write:wallet` | Wallet balances and mode |
-| `read:trades` / `trades:execute` | Trade history and execution |
-| `read:tokens` | Token metadata |
-| `read:earn` | Earnings and claims |
-| `read:analytics` | Dashboard analytics |
-| `read:ai` / `write:ai` | AI chat and tooling |
-| `read:notifications` / `write:notifications` | Notification preferences |
-
-Legacy scope aliases (`agents:read`, `bots:write`, etc.) are also accepted. `admin:*` is not available via OAuth.
+Scopes map to API key permissions. Request only what your integration needs. The single scope table, with the full list, is in [Authentication overview](/guides/authentication#scopes). `admin:*` is not available via OAuth. The published directory manifests request the `read:` and `write:` scopes and do not include `trades:execute`.
 
 ## Token lifetime and refresh
 
@@ -137,13 +129,25 @@ When the access token expires, **re-run the PKCE consent flow** or use a long-li
 
 ## OAuth error responses
 
-| Condition | HTTP | Message / behavior |
+OAuth errors use the same envelope as the rest of the API, not the bare `error` / `error_description` fields from the OAuth spec. A generic OAuth library will not parse them. Match on the HTTP status and `error.code`.
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "BAD_REQUEST",
+    "message": "redirect_uri does not match registered client \"EchoZero CLI\""
+  }
+}
+```
+
+| Condition | HTTP | Behavior |
 | --- | --- | --- |
-| Expired or reused code | 400 | `Invalid or expired authorization code` |
-| PKCE mismatch | 400 | `Invalid code_verifier` |
-| Wrong `redirect_uri` | 400 | Redirect URI mismatch |
-| Invalid `client_id` | 400 | Unknown client |
-| Invalid `state` on callback | — | Your app should reject the callback |
+| Wrong `redirect_uri` | 400 | `BAD_REQUEST`, message `redirect_uri does not match registered client "<client name>"` |
+| Missing or invalid parameters | 400 | `BAD_REQUEST`, with the validator messages joined into one string, for example `response_type must be one of the following values: code, client_id must be a string, ...` |
+| Unsupported `grant_type` (for example `refresh_token`) | 400 | `BAD_REQUEST`, `grant_type must be one of: authorization_code` |
+| Expired or reused code, or PKCE mismatch | 400 | `BAD_REQUEST`. The message text can change, so do not match on it |
+| Invalid `state` on callback | none | Your app should reject the callback |
 
 ## MCP with OAuth
 
@@ -159,17 +163,15 @@ MCP sessions are **bound to the credential** used at `initialize`. Switching API
 
 See the [MCP Server guide](/guides/mcp) for a full `initialize` example.
 
-## Assistant setup (coming soon)
+## Assistant setup
 
-<Note>
-**Coming soon:** The public skills pack (`EchoZeroApp/skills`) and `ez login` CLI are not yet published. Use the PKCE flow above or API keys until the skills repo is public.
-</Note>
+The `ez` CLI runs this PKCE flow for you with the `echozero-cli` client and wires up your assistant:
 
 ```bash
-# When available:
-npx skills add EchoZeroApp/skills
-ez login
+npx @echozero/ez login --client claude    # or: codex, openclaw
 ```
+
+The skills pack (`EchoZeroApp/skills`) is not public yet.
 
 ## Directory integrations
 
@@ -179,4 +181,10 @@ For ChatGPT, Claude, Gemini, and other assistant directories, use connector meta
 https://mcp.echozero.app/public/index.json
 ```
 
-Per-platform manifests live under `/public/directory/*` with authorize URL, token URL, and recommended scope lists.
+Per-platform manifests are individual files with the authorize URL, token URL, and recommended scope lists:
+
+- [`/public/directory/chatgpt/ai-plugin.json`](https://mcp.echozero.app/public/directory/chatgpt/ai-plugin.json)
+- [`/public/directory/claude/connector.json`](https://mcp.echozero.app/public/directory/claude/connector.json)
+- [`/public/directory/gemini/extension.json`](https://mcp.echozero.app/public/directory/gemini/extension.json)
+
+`index.json` lists the others. There is no index page at `/public/directory/{platform}/`.
