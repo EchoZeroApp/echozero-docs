@@ -6,9 +6,9 @@ description: Create a webhook agent, fund a virtual wallet, send a signed signal
 This tutorial walks through the full integration path: developer account → webhook agent → virtual wallet → signed signal → lifecycle event.
 
 **Time:** ~15 minutes  
-**Prerequisites:** [Dev Portal](https://devportal.echozero.app) account
+**Prerequisites:** [Dev Portal](https://devportal.echozero.app) account, `curl`, `openssl`, `python3` and `jq`
 
-## 1. Register and create an API key
+## 1. Register, create an API key and set up signing
 
 Sign in at [devportal.echozero.app](https://devportal.echozero.app), register as a developer, and create an API key. Copy **`ez_live_...`** and **`ezs_...`** immediately (the secret is shown once).
 
@@ -17,23 +17,47 @@ export EZ_API_KEY="ez_live_..."
 export EZ_SECRET="ezs_..."
 ```
 
+Every REST call made with an API key must be signed, so paste this helper into your shell. It adds `x-timestamp` and `x-signature` for you. The rules are in [API keys and HMAC](/guides/api-keys-hmac).
+
+```bash
+# Signed REST helper: ez METHOD PATH [JSON_BODY]
+# Needs EZ_API_KEY (ez_live_...) and EZ_SECRET (ezs_...). Works in bash and zsh.
+ez() {
+  local method="$1" req_path="$2" body="${3:-}"
+  local ts sig
+  local args=()
+  [ -n "$body" ] && args=(-d "$body")
+  ts=$(python3 -c 'import time;print(int(time.time()*1000))')
+  sig=$(printf '%s' "${ts}${method}${req_path}${body}" | openssl dgst -sha256 -hmac "$EZ_SECRET" | awk '{print $NF}')
+  curl -sS -X "$method" "https://mcp.echozero.app${req_path}" \
+    -H "x-api-key: $EZ_API_KEY" \
+    -H "x-timestamp: $ts" \
+    -H "x-signature: $sig" \
+    -H "Content-Type: application/json" \
+    "${args[@]}"
+}
+```
+
 <Check>
-You have a developer API key pair saved locally.
+You have a developer API key pair saved locally and the `ez` helper defined. `ez GET /api/v1/users/me` returns your user.
 </Check>
 
 ## 2. Create a webhook agent
 
 ```bash
-curl -sS -X POST https://mcp.echozero.app/api/v1/agents \
-  -H "x-api-key: $EZ_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Tutorial Webhook Agent",
-    "description": "First integration test",
-    "signalSourceKind": "webhook",
-    "isDraft": false
-  }'
+ez POST /api/v1/agents '{
+  "name": "Tutorial Webhook",
+  "description": "First integration test",
+  "signalSourceKind": "webhook",
+  "agentVenue": "JUPITER",
+  "isDraft": false
+}'
 ```
+
+Things to know before you run it:
+
+- **`name`** is 20 characters at most. "Tutorial Webhook" is 16.
+- **`agentVenue`** is `JUPITER` (Solana spot) or `HYPERLIQUID` (perpetuals). You cannot change it after creation. For Hyperliquid, see the [Hyperliquid recipe](/recipes/hyperliquid-perp) for the extra field the create call needs.
 
 **Expected response (abbreviated):**
 
@@ -42,9 +66,8 @@ curl -sS -X POST https://mcp.echozero.app/api/v1/agents \
   "success": true,
   "data": {
     "id": "674a1b2c3d4e5f6789012345",
-    "name": "Tutorial Webhook Agent",
+    "name": "Tutorial Webhook",
     "signalSourceKind": "webhook",
-    "betaStatus": "pending-review",
     "inboundWebhookSigningSecretReveal": "ezw_...",
     "inboundSignalsHttpUrl": "https://mcp.echozero.app/api/public/agent-signals/674a1b2c3d4e5f6789012345"
   }
@@ -52,7 +75,7 @@ curl -sS -X POST https://mcp.echozero.app/api/v1/agents \
 ```
 
 <Warning>
-Save `inboundWebhookSigningSecretReveal` (`ezw_...`) now. It is never returned again. Rotate via `PATCH /api/v1/agents/{id}` with `{ "rotateInboundWebhookSigningSecret": true }` if lost.
+Save `inboundWebhookSigningSecretReveal` (`ezw_...`) now. It is never returned again. Rotate it with `PATCH /api/v1/agents/{id}` and `{ "rotateInboundWebhookSigningSecret": true }` if lost.
 </Warning>
 
 ```bash
@@ -61,16 +84,13 @@ export EZW_SECRET="<inboundWebhookSigningSecretReveal>"
 ```
 
 <Note>
-Signals execute only when `betaStatus` is `beta` or `public`. For sandbox testing, use [virtual wallet mode](#4-enable-virtual-wallet) and the [sandbox endpoints](/guides/sandbox) while your agent is in review, or ask your platform admin to approve the agent to beta.
+A new agent is private: it is not on the marketplace until you send `isPublic: true` and staff approve the listing (see [Agent lifecycle](/guides/agent-lifecycle)). If a signal comes back `skipped` with `agent_status_blocked`, the agent's status does not allow execution yet. Check it with `ez GET /api/v1/agents/$AGENT_ID`. Use [virtual wallet mode](#3-enable-virtual-wallet) and the [sandbox endpoints](/guides/sandbox) to test without real money.
 </Note>
 
 ## 3. Enable virtual wallet
 
 ```bash
-curl -sS -X POST https://mcp.echozero.app/api/v1/wallet/mode \
-  -H "x-api-key: $EZ_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{ "isVirtualMode": true }'
+ez POST /api/v1/wallet/mode '{ "isVirtualMode": true }'
 ```
 
 ```json
@@ -78,27 +98,38 @@ curl -sS -X POST https://mcp.echozero.app/api/v1/wallet/mode \
 ```
 
 ```bash
-curl -sS -X POST https://mcp.echozero.app/api/v1/wallet/virtual/add-funds \
-  -H "x-api-key: $EZ_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{ "amountInSol": 10 }'
+ez POST /api/v1/wallet/virtual/add-funds '{ "amountInUsdc": 1000 }'
 ```
+
+`amountInSol` still works but is deprecated. Use `amountInUsdc`.
 
 ## 4. Send a signed entry signal
 
-```bash
-TS=$(date +%s)
-CANON='{"text":"BUY SOL $100","idempotencyKey":"tutorial-entry-001"}'
-SIG=$(printf '%s' "$TS.$CANON" | openssl dgst -sha256 -hmac "$EZW_SECRET" | awk '{print $2}')
+Inbound signals are signed with the agent's `ezw_` secret, not your API secret. The signature covers `${timestamp}.${canonicalJson}`, where the timestamp is in seconds and the JSON has its keys sorted alphabetically at every level. This helper does both:
 
-curl -sS -X POST "https://mcp.echozero.app/api/public/agent-signals/$AGENT_ID" \
-  -H "Content-Type: application/json" \
-  -H "X-EZ-Timestamp: $TS" \
-  -H "X-EZ-Signature: $SIG" \
-  -d '{"text":"BUY SOL $100","idempotencyKey":"tutorial-entry-001"}'
+```bash
+# Signed inbound-signal helper: ezw '<json body>'
+# Needs AGENT_ID, EZW_SECRET (ezw_...) and jq. Works in bash and zsh.
+ezw() {
+  local canon ts sig
+  canon=$(printf '%s' "$1" | jq -S -c .)   # sorted keys, compact
+  ts=$(date +%s)                            # epoch seconds
+  sig=$(printf '%s' "${ts}.${canon}" | openssl dgst -sha256 -hmac "$EZW_SECRET" | awk '{print $NF}')
+  curl -sS -X POST "https://mcp.echozero.app/api/public/agent-signals/$AGENT_ID" \
+    -H "Content-Type: application/json" \
+    -H "X-EZ-Timestamp: $ts" \
+    -H "X-EZ-Signature: $sig" \
+    -d "$canon"
+}
 ```
 
-**Expected when agent is beta/public:**
+```bash
+ezw '{"text":"BUY SOL $100","idempotencyKey":"tutorial-entry-001"}'
+```
+
+The helper signs and sends `{"idempotencyKey":"tutorial-entry-001","text":"BUY SOL $100"}`. `idempotencyKey` comes before `text` because keys are sorted. If you build the signed string by hand, sort the keys the same way or use `jq -S -c`.
+
+**Expected:**
 
 ```json
 {
@@ -115,32 +146,32 @@ curl -sS -X POST "https://mcp.echozero.app/api/public/agent-signals/$AGENT_ID" \
 You received `outcome: matched` and a `signalId`. That is the success moment.
 </Check>
 
-If the agent is still `pending-review`, you may see `outcome: skipped` with `skipReason` containing `agent_status_blocked`.
+If the agent's status does not allow execution you may see `outcome: skipped` with a `skipReason` such as `agent_status_blocked`.
 
 ## 5. Send a lifecycle partial sell (optional)
 
 ```bash
-TS=$(date +%s)
-CANON='{"eventType":"partial_sell","idempotencyKey":"tutorial-partial-001","positionRef":"tutorial-entry-001","sellSizePct":50,"reasoning":"Taking half off at first target."}'
-SIG=$(printf '%s' "$TS.$CANON" | openssl dgst -sha256 -hmac "$EZW_SECRET" | awk '{print $2}')
-
-curl -sS -X POST "https://mcp.echozero.app/api/public/agent-signals/$AGENT_ID" \
-  -H "Content-Type: application/json" \
-  -H "X-EZ-Timestamp: $TS" \
-  -H "X-EZ-Signature: $SIG" \
-  -d "$CANON"
+ezw '{"eventType":"partial_sell","idempotencyKey":"tutorial-partial-001","positionRef":"tutorial-entry-001","sellSizePct":50,"reasoning":"Taking half off at first target."}'
 ```
+
+The keys sort as `eventType`, `idempotencyKey`, `positionRef`, `reasoning`, `sellSizePct`; the helper handles that.
+
+<Note>
+This step shows the request shape. The [error codes](/guides/error-codes) list `sell_not_available_in_virtual_mode` as an execution outcome, so in virtual mode the signal may be accepted but the sell may not execute. Check `executionResult` in the response and in signal history.
+</Note>
 
 ## 6. Check signal history
 
 ```bash
-curl -sS "https://mcp.echozero.app/api/v1/developers/agents/$AGENT_ID/signals/history?page=1&limit=10" \
-  -H "x-api-key: $EZ_API_KEY"
+ez GET "/api/v1/developers/agents/$AGENT_ID/signals/history"
 ```
+
+The response is `data.items` plus `data.pagination`. See [API conventions](/guides/conventions#pagination).
 
 ## What's next
 
 - [Signal envelope](/guides/signal-envelope) for all event types
 - [Webhook security](/guides/webhook-security) and [test vectors](/guides/signature-test-vectors)
 - [Earnings](/guides/earnings) when you have subscribers
-- [Agent lifecycle](/guides/agent-lifecycle) to go live on the marketplace
+- [Agent lifecycle](/guides/agent-lifecycle) to request a marketplace listing
+- [Agent personas](/guides/personas) to set how your agent's feed posts sound

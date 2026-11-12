@@ -11,13 +11,35 @@ External developers test against the **production API host** - there is no separ
 
 1. Sign in at [devportal.echozero.app](https://devportal.echozero.app).
 2. Register as a developer and create an API key.
-3. Export it locally:
+3. Export the key and its secret locally:
 
 ```bash
 export EZ_API_KEY="ez_live_..."
+export EZ_SECRET="ezs_..."
 ```
 
-All examples below send this key as `x-api-key`.
+Every API-key request must be signed with the secret, so the examples below use the `ez` helper:
+
+```bash
+# Signed REST helper: ez METHOD PATH [JSON_BODY]
+# Needs EZ_API_KEY (ez_live_...) and EZ_SECRET (ezs_...). Works in bash and zsh.
+ez() {
+  local method="$1" req_path="$2" body="${3:-}"
+  local ts sig
+  local args=()
+  [ -n "$body" ] && args=(-d "$body")
+  ts=$(python3 -c 'import time;print(int(time.time()*1000))')
+  sig=$(printf '%s' "${ts}${method}${req_path}${body}" | openssl dgst -sha256 -hmac "$EZ_SECRET" | awk '{print $NF}')
+  curl -sS -X "$method" "https://mcp.echozero.app${req_path}" \
+    -H "x-api-key: $EZ_API_KEY" \
+    -H "x-timestamp: $ts" \
+    -H "x-signature: $sig" \
+    -H "Content-Type: application/json" \
+    "${args[@]}"
+}
+```
+
+See [API keys and HMAC](/guides/api-keys-hmac) for how signing works.
 
 ## 2. Dry-run sandbox endpoints
 
@@ -26,33 +48,28 @@ The **Sandbox** API group provides dry-run simulators - they validate ownership 
 ### Simulate a trade for your agent
 
 ```bash
-curl -sS -X POST "https://mcp.echozero.app/api/sandbox/agents/{agentId}/trade" \
-  -H "x-api-key: $EZ_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "pair": "SOL/USDC",
-    "amount": 100,
-    "action": "BUY"
-  }'
+ez POST "/api/sandbox/agents/$AGENT_ID/trade" '{
+  "pair": "SOL/USDC",
+  "amount": 100,
+  "action": "BUY"
+}'
 ```
 
 ### Simulate signal parsing for an agent
 
 ```bash
-curl -sS -X POST "https://mcp.echozero.app/api/sandbox/agents/{agentId}/signals/simulate" \
-  -H "x-api-key: $EZ_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "message": "Buy SOL at $145, TP $160, SL $138"
-  }'
+ez POST "/api/sandbox/agents/$AGENT_ID/signals/simulate" '{
+  "message": "Buy SOL at $145, TP $160, SL $138"
+}'
 ```
 
 ### List sandbox signal history
 
 ```bash
-curl -sS "https://mcp.echozero.app/api/sandbox/agents/{agentId}/signals?page=1&limit=20" \
-  -H "x-api-key: $EZ_API_KEY"
+ez GET "/api/sandbox/agents/$AGENT_ID/signals"
 ```
+
+The response is `data.items` plus `data.pagination`. The spec lists no paging query parameters for this route, so do not rely on `page` or `limit`.
 
 See the **Sandbox** tag in the API Reference sidebar for full request/response schemas.
 
@@ -62,56 +79,56 @@ Switch to virtual wallet mode and add simulated funds before testing buy/sell fl
 
 ```bash
 # Toggle to virtual mode
-curl -sS -X POST "https://mcp.echozero.app/api/v1/wallet/mode" \
-  -H "x-api-key: $EZ_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{ "isVirtualMode": true }'
+ez POST /api/v1/wallet/mode '{ "isVirtualMode": true }'
 
-# Add virtual SOL balance
-curl -sS -X POST "https://mcp.echozero.app/api/v1/wallet/virtual/add-funds" \
-  -H "x-api-key: $EZ_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{ "amountInSol": 10 }'
+# Add virtual USDC balance
+ez POST /api/v1/wallet/virtual/add-funds '{ "amountInUsdc": 1000 }'
 ```
 
-Virtual trades use simulated balances - no on-chain execution.
+Virtual trades use simulated balances - no on-chain execution. `amountInSol` is deprecated; use `amountInUsdc`.
 
 ## 4. Portal demo signals
 
 To record a demo signal row for an agent (isolated from live subscriber execution), use:
 
 ```bash
-curl -sS -X POST "https://mcp.echozero.app/api/dev/trade-signals" \
-  -H "x-api-key: $EZ_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "developerAgentId": "{agentId}",
-    "action": "buy",
-    "tokenAddress": "So11111111111111111111111111111111111111112",
-    "amount": 100
-  }'
+ez POST /api/dev/trade-signals '{
+  "developerAgentId": "'"$AGENT_ID"'",
+  "action": "buy",
+  "tokenAddress": "So11111111111111111111111111111111111111112",
+  "amount": 100
+}'
 ```
 
 Demo signals appear in developer signal history but do not trigger the live trade bridge.
 
 ## 5. Test inbound webhook signing
 
-Create a webhook agent in the Dev Portal (`signalSourceKind: webhook`). Save the `inboundWebhookSigningSecretReveal` (`ezw_...`) shown once at creation.
+Create a webhook agent (`signalSourceKind: webhook`, with an `agentVenue`) in the Dev Portal or through the API. Save the `inboundWebhookSigningSecretReveal` (`ezw_...`) shown once at creation.
 
-Post a signed test signal:
+Inbound signals use the agent's `ezw_` secret, a timestamp in seconds, and canonical JSON (keys sorted alphabetically). This helper does all three:
 
 ```bash
-AGENT_ID="{agentId}"
-SECRET="ezw_..."
-TS=$(date +%s)
-CANON='{"text":"BUY SOL $100"}'
-SIG=$(printf '%s' "$TS.$CANON" | openssl dgst -sha256 -hmac "$SECRET" | awk '{print $2}')
+# Signed inbound-signal helper: ezw '<json body>'
+# Needs AGENT_ID, EZW_SECRET (ezw_...) and jq. Works in bash and zsh.
+ezw() {
+  local canon ts sig
+  canon=$(printf '%s' "$1" | jq -S -c .)   # sorted keys, compact
+  ts=$(date +%s)                            # epoch seconds
+  sig=$(printf '%s' "${ts}.${canon}" | openssl dgst -sha256 -hmac "$EZW_SECRET" | awk '{print $NF}')
+  curl -sS -X POST "https://mcp.echozero.app/api/public/agent-signals/$AGENT_ID" \
+    -H "Content-Type: application/json" \
+    -H "X-EZ-Timestamp: $ts" \
+    -H "X-EZ-Signature: $sig" \
+    -d "$canon"
+}
+```
 
-curl -sS -X POST "https://mcp.echozero.app/api/public/agent-signals/$AGENT_ID" \
-  -H "Content-Type: application/json" \
-  -H "X-EZ-Timestamp: $TS" \
-  -H "X-EZ-Signature: $SIG" \
-  -d '{"text":"BUY SOL $100"}'
+```bash
+export AGENT_ID="<agent id>"
+export EZW_SECRET="ezw_..."
+
+ezw '{"text":"BUY SOL $100","idempotencyKey":"sandbox-001"}'
 ```
 
 Use [virtual wallet mode](#3-virtual-wallet-paper-trading) so execution uses simulated balances. Full signing details are in [Webhook security](/guides/webhook-security).
