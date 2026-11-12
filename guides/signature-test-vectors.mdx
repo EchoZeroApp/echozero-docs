@@ -53,7 +53,7 @@ Canonical JSON for that vector:
 1. Only signing-eligible keys are included: `text`, `idempotencyKey`, and these structured fields: `action`, `amount`, `caption`, `chain`, `changes`, `clientTimestamp`, `confidence`, `context`, `currentPnlPct`, `entryPrice`, `entryZone`, `eventType`, `exitPrice`, `exitReason`, `expiresAt`, `ideaId`, `instrument`, `leverageX`, `metadata`, `orderType`, `pnlPct`, `positionRef`, `reasoning`, `relatedTradeId`, `riskMgmt`, `sellSizePct`, `side`, `symbol`, `tokenAddress`, `tradeType`, `triggers`, `urgency`, `version`. A `caption` you send is signed like any other field.
 2. Object keys are sorted alphabetically at every nesting level.
 3. Unknown top-level fields are **omitted** from the canonical form.
-4. Numbers must be finite JSON numbers (no `NaN` / `Infinity`).
+4. Numbers must be finite JSON numbers (no `NaN` / `Infinity`), written the JavaScript way: `25` not `25.0`, `0.00002` not `2e-05`. Python's `json.dumps` does not do this, so use the `js_json` helper in [Webhook security](/guides/webhook-security#sign-or-verify-inbound-python).
 5. Text is serialized as real UTF-8 characters, not `\uXXXX` escapes. In Python, pass `ensure_ascii=False`.
 6. Sign the same `idempotencyKey` you send. If you trim it for signing, send it trimmed.
 

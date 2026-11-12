@@ -72,10 +72,50 @@ const headers = await signInboundWebhook({
 
 ### Sign or verify inbound (Python)
 
-Only the signing-eligible keys count, so filter the body to them before you serialize. Use `ensure_ascii=False`: the server signs accented characters and emoji as real characters, and Python's default escapes them, which gives a different signature.
+Only the signing-eligible keys count, so filter the body to them before you serialize. Two things must match the server's JavaScript serializer. Text must be real characters, not `\uXXXX` escapes (`ensure_ascii=False`). Numbers must print the JavaScript way: `25`, not `25.0`, and `0.00002`, not `2e-05`. Python's `json.dumps` gets both wrong by default, so use the `js_json` helper below.
 
 ```python
-import hmac, hashlib, json
+import hmac, hashlib, json, math
+from decimal import Decimal
+
+def js_number(x):
+    """Format a number the way JavaScript's Number.prototype.toString does."""
+    if isinstance(x, bool):
+        raise TypeError("bool is not a number")
+    if isinstance(x, int):
+        if abs(x) < 2**53:
+            return str(x)
+        x = float(x)
+    if not math.isfinite(x):
+        raise ValueError("NaN and Infinity cannot be signed")
+    if x == 0:
+        return "0"
+    sign = "-" if x < 0 else ""
+    d = Decimal(repr(abs(x))).as_tuple()  # shortest round-trip digits, like JS
+    digits = "".join(map(str, d.digits)).rstrip("0") or "0"
+    n = len(d.digits) + d.exponent  # value = 0.<digits> * 10**n
+    k = len(digits)
+    if k <= n <= 21:
+        out = digits + "0" * (n - k)
+    elif 0 < n <= 21:
+        out = digits[:n] + "." + digits[n:]
+    elif -6 < n <= 0:
+        out = "0." + "0" * (-n) + digits
+    else:
+        e = n - 1
+        out = digits[0] + ("." + digits[1:] if k > 1 else "") + ("e+" if e >= 0 else "e-") + str(abs(e))
+    return sign + out
+
+def js_json(v):
+    """Compact JSON, keys sorted at every level, numbers formatted like JavaScript."""
+    if isinstance(v, dict):
+        keys = sorted(v, key=lambda k: k.encode("utf-16-be"))
+        return "{" + ",".join(json.dumps(k, ensure_ascii=False) + ":" + js_json(v[k]) for k in keys) + "}"
+    if isinstance(v, (list, tuple)):
+        return "[" + ",".join(js_json(i) for i in v) + "]"
+    if v is None or isinstance(v, (bool, str)):
+        return json.dumps(v, ensure_ascii=False)  # ensure_ascii=False: real UTF-8 characters
+    return js_number(v)
 
 SIGNED_KEYS = {
     "text", "idempotencyKey",
@@ -88,8 +128,7 @@ SIGNED_KEYS = {
 }
 
 def canonical_json(body: dict) -> str:
-    out = {k: v for k, v in body.items() if k in SIGNED_KEYS}
-    return json.dumps(out, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return js_json({k: v for k, v in body.items() if k in SIGNED_KEYS})
 
 def sign_inbound(secret: str, body: dict, timestamp: str) -> str:
     payload = f"{timestamp}.{canonical_json(body)}"
