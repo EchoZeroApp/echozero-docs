@@ -63,9 +63,11 @@ Response headers may also include `X-Mcp-Instance-Id` for load-balancer sticky r
 
 ## Example `initialize` request
 
+The examples use an OAuth access token (`OAUTH_TOKEN`, from the [OAuth flow](/guides/oauth) or `npx @echozero/ez login`), which needs no request signing. If you use an API key instead, send `x-api-key` plus `x-timestamp` and `x-signature` on every call, signed over `timestamp + "POST" + "/mcp" + body` as described in [API keys and HMAC](/guides/api-keys-hmac).
+
 ```bash
 curl -sS https://mcp.echozero.app/mcp \
-  -H "x-api-key: $EZ_API_KEY" \
+  -H "Authorization: Bearer $OAUTH_TOKEN" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
   -d '{
@@ -86,7 +88,7 @@ Save `mcp-session-id` from the response headers.
 
 ```bash
 curl -sS https://mcp.echozero.app/mcp \
-  -H "x-api-key: $EZ_API_KEY" \
+  -H "Authorization: Bearer $OAUTH_TOKEN" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
   -H "mcp-session-id: $MCP_SESSION_ID" \
