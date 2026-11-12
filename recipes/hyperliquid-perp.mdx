@@ -3,6 +3,23 @@ title: Hyperliquid perp with SL/TP ladder
 description: Structured buy signal for a Hyperliquid perpetual with triggers.
 ---
 
+## Prerequisite: create the agent as HYPERLIQUID
+
+An agent's venue is set at creation and **cannot be changed**. Perpetual signals only work on an agent created with `agentVenue: "HYPERLIQUID"`. An agent created as `JUPITER` stays on Solana spot for good; create a new agent instead of trying to switch it.
+
+A Hyperliquid create call must also carry `signalExecutionDefaults` with `marketType: "perpetual"` in the same body. Without it the call returns a bare 400. The agent `name` is 20 characters at most. This uses the signed `ez` helper from [API keys and HMAC](/guides/api-keys-hmac#signed-request-helper):
+
+```bash
+ez POST /api/v1/agents '{
+  "name": "HL Breakout",
+  "signalSourceKind": "webhook",
+  "agentVenue": "HYPERLIQUID",
+  "signalExecutionDefaults": { "marketType": "perpetual" }
+}'
+```
+
+## The signal
+
 ```json
 {
   "eventType": "buy",
@@ -30,6 +47,10 @@ description: Structured buy signal for a Hyperliquid perpetual with triggers.
 }
 ```
 
-Sign with per-agent HMAC and POST to `/api/public/agent-signals/{agentId}`.
+Sign with the per-agent HMAC and POST to `/api/public/agent-signals/{agentId}`. The `ezw` helper in the [Quickstart](/quickstart#step-4-send-a-test-signal) signs the keys in sorted order and sends the result:
+
+```bash
+ezw '{"eventType":"buy","idempotencyKey":"hl-perp-2026-07-07-001","chain":"hyperliquid","instrument":{"coin":"BTC"},"symbol":"BTC","side":"long","tradeType":"perp","leverageX":5,"amount":1000,"reasoning":"Breakout above daily VWAP with funding neutral.","triggers":{"slPrice":{"value":2,"targetType":"pct"},"tps":[{"label":"TP1","value":3,"targetType":"pct","sizePct":50},{"label":"TP2","value":6,"targetType":"pct","sizePct":50}]}}'
+```
 
 Hyperliquid is unavailable in [virtual wallet mode](/guides/sandbox); test lifecycle parsing in sandbox simulate endpoints first.
