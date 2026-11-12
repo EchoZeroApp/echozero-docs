@@ -21,18 +21,23 @@ Every REST call made with an API key must be signed, so paste this helper into y
 
 ```bash
 # Signed REST helper: ez METHOD PATH [JSON_BODY]
-# Needs EZ_API_KEY (ez_live_...) and EZ_SECRET (ezs_...). Works in bash and zsh.
+# Needs EZ_API_KEY (ez_live_...), EZ_SECRET (ezs_...) and jq. Works in bash and zsh.
+# The body is compacted with jq -c, and that same compact string is signed and sent.
 ez() {
   local method="$1" req_path="$2" body="${3:-}"
   local ts sig
   local args=()
-  [ -n "$body" ] && args=(-d "$body")
+  if [ -n "$body" ]; then
+    body=$(printf '%s' "$body" | jq -c .) || return 1
+    args=(-d "$body")
+  fi
   ts=$(python3 -c 'import time;print(int(time.time()*1000))')
   sig=$(printf '%s' "${ts}${method}${req_path}${body}" | openssl dgst -sha256 -hmac "$EZ_SECRET" | awk '{print $NF}')
   curl -sS -X "$method" "https://mcp.echozero.app${req_path}" \
     -H "x-api-key: $EZ_API_KEY" \
     -H "x-timestamp: $ts" \
     -H "x-signature: $sig" \
+    -H "x-ez-mcp-client: ${EZ_CLIENT:-my-integration}" \
     -H "Content-Type: application/json" \
     "${args[@]}"
 }
@@ -53,6 +58,10 @@ ez POST /api/v1/agents '{
   "isDraft": false
 }'
 ```
+
+<Note>
+Agent create calls (`POST /api/v1/agents`) carry an `x-ez-mcp-client` header with a short label for your client. The `ez` helper sends it for you (set `EZ_CLIENT` to change the label). The API spec lists it as required on this route. Whether the server enforces it is not confirmed, so include it.
+</Note>
 
 Things to know before you run it:
 
@@ -123,6 +132,10 @@ ezw() {
 }
 ```
 
+<Note>
+Write numbers in plain form (`100`, `100.5`), not `1.0`, `100.50` or `1E+3`. `jq` keeps numbers as typed, but the server re-serialises them the JavaScript way, so the signature would not match. Send only documented fields too: the server drops unknown top-level fields before it verifies the signature, and `jq` would sign them. If you need arbitrary numbers, use an SDK.
+</Note>
+
 ```bash
 ezw '{"text":"BUY SOL $100","idempotencyKey":"tutorial-entry-001"}'
 ```
@@ -147,6 +160,10 @@ You received `outcome: matched` and a `signalId`. That is the success moment.
 </Check>
 
 If the agent's status does not allow execution you may see `outcome: skipped` with a `skipReason` such as `agent_status_blocked`.
+
+<Note>
+Known issue (EZD-66): a brand-new private webhook agent can currently return 404 instead of `outcome: matched`, because the signal endpoint does not find private agents yet. This is being fixed. If you see a 404 and the `agentId` in the URL is correct, that is the likely cause, not a signing mistake. The [sandbox endpoints](/guides/sandbox) work in the meantime.
+</Note>
 
 ## 5. Send a lifecycle partial sell (optional)
 

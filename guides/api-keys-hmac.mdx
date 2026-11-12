@@ -9,17 +9,15 @@ Every call authenticated with an API key needs `x-api-key`, `x-timestamp` and `x
 
 ## API key authentication
 
-Send your developer API key on every authenticated request using either header:
+Send your developer API key on every authenticated request in either header, **together with the signing headers** described below:
 
 ```bash
-curl https://mcp.echozero.app/api/v1/users/me \
-  -H "x-api-key: ez_live_..."
+x-api-key: ez_live_...
+# or
+Authorization: Bearer ez_live_...
 ```
 
-```bash
-curl https://mcp.echozero.app/api/v1/users/me \
-  -H "Authorization: Bearer ez_live_..."
-```
+On its own, either header returns 401. The complete signed requests are in the `ez` helper and the curl examples further down. Do not copy a bare key-only request.
 
 Create and revoke keys in the [Dev Portal](https://devportal.echozero.app). Each key has scoped permissions - request only the scopes your integration needs.
 
@@ -45,7 +43,7 @@ stringToSign = timestamp + METHOD + path + body
 
 - `METHOD` - uppercase HTTP verb (`GET`, `POST`, …)
 - `path` - full request path including query string (e.g. `/api/v1/developers/earnings`)
-- `body` - raw JSON string for POST/PUT/PATCH, or empty string when there is no body
+- `body` - the compact JSON for POST/PUT/PATCH (no spaces or line breaks between tokens), or an empty string when there is no body. The server signs `JSON.stringify` of the parsed body, so send compact JSON and sign exactly the string you send. A body with extra spaces or line breaks produces a 401.
 
 <Warning>
 REST HMAC uses **milliseconds** and includes the HTTP method and path. This is **different** from [inbound agent webhook](/guides/webhook-security) signing, which uses **seconds** and canonical JSON only.
@@ -57,18 +55,23 @@ Every REST example in these docs uses this small shell function. Paste it into y
 
 ```bash
 # Signed REST helper: ez METHOD PATH [JSON_BODY]
-# Needs EZ_API_KEY (ez_live_...) and EZ_SECRET (ezs_...). Works in bash and zsh.
+# Needs EZ_API_KEY (ez_live_...), EZ_SECRET (ezs_...) and jq. Works in bash and zsh.
+# The body is compacted with jq -c, and that same compact string is signed and sent.
 ez() {
   local method="$1" req_path="$2" body="${3:-}"
   local ts sig
   local args=()
-  [ -n "$body" ] && args=(-d "$body")
+  if [ -n "$body" ]; then
+    body=$(printf '%s' "$body" | jq -c .) || return 1
+    args=(-d "$body")
+  fi
   ts=$(python3 -c 'import time;print(int(time.time()*1000))')
   sig=$(printf '%s' "${ts}${method}${req_path}${body}" | openssl dgst -sha256 -hmac "$EZ_SECRET" | awk '{print $NF}')
   curl -sS -X "$method" "https://mcp.echozero.app${req_path}" \
     -H "x-api-key: $EZ_API_KEY" \
     -H "x-timestamp: $ts" \
     -H "x-signature: $sig" \
+    -H "x-ez-mcp-client: ${EZ_CLIENT:-my-integration}" \
     -H "Content-Type: application/json" \
     "${args[@]}"
 }
@@ -79,7 +82,7 @@ ez GET /api/v1/users/me
 ez POST /api/v1/wallet/mode '{"isVirtualMode":true}'
 ```
 
-Pass the path exactly as you want it requested, including any query string, because the query string is part of the signed text.
+Pass the path exactly as you want it requested, including any query string, because the query string is part of the signed text. The helper compacts your JSON with `jq -c` and signs and sends that same compact string, because the server signs `JSON.stringify` of the parsed body. The `x-ez-mcp-client` header carries a short label for your client (set `EZ_CLIENT` to change it). The API spec lists it as required on `POST /api/v1/agents`; whether it is enforced is not confirmed, so send it on agent create calls.
 
 <Note>
 The timestamp comes from `python3` on purpose. `date +%s%3N` only works on GNU/Linux. On macOS it prints a literal `N`, and the call fails with `Invalid x-timestamp value`. A perl one-liner such as `perl -MTime::HiRes=time -e 'printf "%d", time*1000'` works too.
@@ -130,13 +133,13 @@ from echozero import EchoZeroClient
 
 client = EchoZeroClient(
     api_key=os.environ["EZ_API_KEY"],
-    hmac_secret_key=os.environ["EZ_SECRET_KEY"],
+    hmac_secret_key=os.environ["EZ_SECRET"],
 )
 me = client.get("/api/v1/users/me", hmac=True)
 print(me)
 ```
 
-`hmac=True` is the default for API-key clients — every request is signed automatically.
+`hmac=True` is the default for API-key clients, so every request is signed automatically.
 
 ### TypeScript (echozero-sdk)
 
@@ -145,7 +148,7 @@ import { EchoZeroClient } from '@echozero/sdk';
 
 const client = new EchoZeroClient({
   apiKey: process.env.EZ_API_KEY!,
-  hmacSecretKey: process.env.EZ_SECRET_KEY,
+  hmacSecretKey: process.env.EZ_SECRET,
 });
 
 const me = await client.get('/api/v1/users/me', { hmac: true });
@@ -159,7 +162,7 @@ Or sign manually with `signRestRequest`:
 import { signRestRequest } from '@echozero/sdk';
 
 const headers = await signRestRequest({
-  secretKey: process.env.EZ_SECRET_KEY!,
+  secretKey: process.env.EZ_SECRET!,
   method: 'GET',
   path: '/api/v1/users/me',
 });
