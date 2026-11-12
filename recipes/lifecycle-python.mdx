@@ -4,11 +4,52 @@ description: Entry, partial sell, and cancel with inbound webhook signing.
 ---
 
 ```python
-import os, time, json, hmac, hashlib, requests
+import os, time, hmac, hashlib, requests
+import json, math
+from decimal import Decimal
 
 AGENT_ID = os.environ["AGENT_ID"]
 SECRET = os.environ["EZW_SECRET"]
 BASE = "https://mcp.echozero.app/api/public/agent-signals"
+
+def js_number(x):
+    """Format a number the way JavaScript's Number.prototype.toString does."""
+    if isinstance(x, bool):
+        raise TypeError("bool is not a number")
+    if isinstance(x, int):
+        if abs(x) < 2**53:
+            return str(x)
+        x = float(x)
+    if not math.isfinite(x):
+        raise ValueError("NaN and Infinity cannot be signed")
+    if x == 0:
+        return "0"
+    sign = "-" if x < 0 else ""
+    d = Decimal(repr(abs(x))).as_tuple()  # shortest round-trip digits, like JS
+    digits = "".join(map(str, d.digits)).rstrip("0") or "0"
+    n = len(d.digits) + d.exponent  # value = 0.<digits> * 10**n
+    k = len(digits)
+    if k <= n <= 21:
+        out = digits + "0" * (n - k)
+    elif 0 < n <= 21:
+        out = digits[:n] + "." + digits[n:]
+    elif -6 < n <= 0:
+        out = "0." + "0" * (-n) + digits
+    else:
+        e = n - 1
+        out = digits[0] + ("." + digits[1:] if k > 1 else "") + ("e+" if e >= 0 else "e-") + str(abs(e))
+    return sign + out
+
+def js_json(v):
+    """Compact JSON, keys sorted at every level, numbers formatted like JavaScript."""
+    if isinstance(v, dict):
+        keys = sorted(v, key=lambda k: k.encode("utf-16-be"))
+        return "{" + ",".join(json.dumps(k, ensure_ascii=False) + ":" + js_json(v[k]) for k in keys) + "}"
+    if isinstance(v, (list, tuple)):
+        return "[" + ",".join(js_json(i) for i in v) + "]"
+    if v is None or isinstance(v, (bool, str)):
+        return json.dumps(v, ensure_ascii=False)  # ensure_ascii=False: real UTF-8 characters
+    return js_number(v)
 
 # Every key the server includes in the signature (text and idempotencyKey too).
 SIGNED_KEYS = {
@@ -25,9 +66,9 @@ def canonical_json(body: dict) -> str:
     out = {k: v for k, v in body.items() if k in SIGNED_KEYS}
     if "idempotencyKey" in out:
         out["idempotencyKey"] = out["idempotencyKey"].strip()
-    # ensure_ascii=False keeps accents and emoji as real characters,
-    # which is what the server signs. The default would escape them.
-    return json.dumps(out, separators=(",", ":"), sort_keys=True, ensure_ascii=False)
+    # js_json writes real UTF-8 characters and JavaScript-style numbers
+    # (25, not 25.0; 0.00002, not 2e-05), which is what the server signs.
+    return js_json(out)
 
 def sign_and_post(body: dict):
     ts = str(int(time.time()))
@@ -67,7 +108,9 @@ partial = sign_and_post({
 })
 print("partial", partial)
 
-# 3. Cancel (use this when a setup is invalidated before it fills)
+# 3. Cancel. This is meant for a setup that has not filled yet. The entry above
+# has already filled, so to close a filled position send a sell instead. The
+# cancel here only shows the request shape.
 cancel = sign_and_post({
     "eventType": "cancel",
     "idempotencyKey": "py-demo-cancel-001",
@@ -82,7 +125,7 @@ To skip the inline canonicalization, post through the published `echozero` packa
 ```python
 from echozero import EchoZeroClient
 
-client = EchoZeroClient(api_key=os.environ["EZ_API_KEY"], hmac_secret_key=os.environ["EZ_SECRET_KEY"])
+client = EchoZeroClient(api_key=os.environ["EZ_API_KEY"], hmac_secret_key=os.environ["EZ_SECRET"])
 result = client.post_agent_signal(
     AGENT_ID,
     {"text": "BUY SOL $100", "idempotencyKey": "entry-001"},
