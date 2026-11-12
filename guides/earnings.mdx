@@ -11,8 +11,8 @@ All routes require developer registration and API key authentication with HMAC s
 
 | Stream | Who pays | Rate | Split |
 | --- | --- | --- | --- |
-| **Success fee** | Subscriber, only on **new profit highs** | You set `successFeePercent` (**0-22%**) | You keep your full `successFeePercent`. EchoZero adds a fixed **8%** platform fee on top. |
-| **Subscription** | Subscriber, monthly | You set `monthlyPrice` | **80%** to you, **20%** platform |
+| **Success fee** | Subscriber, only on **new profit highs** | You set `marketplaceSuccessFeePercent` (**0-22%**, default 20) | You keep your full success fee percent. EchoZero adds a fixed **8%** platform fee on top. |
+| **Subscription** | Subscriber, monthly | You set `marketplaceMonthlyPrice` | **80%** to you, **20%** platform |
 | **Both** | Subscriber | Subscription + success fee | Each stream as above |
 
 The most a subscriber can pay in success fees is **30%** of new profit (your 22% maximum plus EchoZero's 8%).
@@ -28,7 +28,7 @@ EchoZero tracks a **high-water mark** (HWM) for every subscriber on every agent 
 
 ### Worked example: success fee
 
-Your `successFeePercent` is **15%**. A subscriber's realized profit on your agent reaches **$2,000**, and their previous high-water mark was **$0**.
+Your `marketplaceSuccessFeePercent` is **15%**. A subscriber's realized profit on your agent reaches **$2,000**, and their previous high-water mark was **$0**.
 
 1. Fee base: $2,000 - $0 = **$2,000** of new profit
 2. Your creator fee: $2,000 × 15% = **$300**
@@ -43,7 +43,7 @@ Accrued but unsettled fees are visible in your earnings totals but are **not cla
 
 ### Worked example: subscription
 
-You set `monthlyPrice: 29`. Ten subscribers pay for one month.
+You set `marketplaceMonthlyPrice: 29`. Ten subscribers pay for one month.
 
 1. Gross: **$290**
 2. Platform fee (20%): **$58**
@@ -51,16 +51,22 @@ You set `monthlyPrice: 29`. Ten subscribers pay for one month.
 
 ## Monetization models
 
-Set on agent create/update (`pricingModel`):
+Set these on agent create or update (`POST /api/v1/agents`, `PATCH /api/v1/agents/{id}`):
 
-| Model | Fields |
+| Model (`marketplacePricingModel`) | Fields |
 | --- | --- |
-| `subscription` | `monthlyPrice` |
-| `success-fee` | `successFeePercent` (0-22) |
-| `both` | `monthlyPrice` + `successFeePercent` |
+| `subscription` | `marketplaceMonthlyPrice` |
+| `success-fee` | `marketplaceSuccessFeePercent` (0-22) |
+| `both` | `marketplaceMonthlyPrice` + `marketplaceSuccessFeePercent` |
 | `free` | No charge |
 
-Values of `successFeePercent` above **22** are rejected on create, update, and marketplace publish.
+`marketplaceSuccessFeePercent` defaults to **20** when you do not send it. You can also set the percentage with `feeConfiguration.feePercentage`.
+
+<Note>
+The request fields are prefixed with `marketplace`. When you read an agent back, or browse public agents, the same values are returned as `pricingModel`, `monthlyPrice` and `successFeePercent`. Sending the read names on create or update does not set the price.
+</Note>
+
+Values above **22** for the success fee are rejected on create and update.
 
 ## Getting paid
 
@@ -95,10 +101,10 @@ Check this before claiming. The `totalClaimable` field is a deprecated alias of 
 ### Payout history
 
 ```
-GET /api/v1/developers/payouts?page=1&limit=20
+GET /api/v1/developers/payouts
 ```
 
-Paginated weekly payout rows: gross amount, platform fee, net.
+Weekly payout rows: gross amount, platform fee, net. The response is `data.items` plus `data.pagination`. See [API conventions](/guides/conventions#pagination).
 
 ### Claim success fees
 
@@ -108,7 +114,7 @@ POST /api/v1/developers/claims/agents/{agentId}  # claim one agent
 POST /api/v1/developers/claims/all               # claim all owned agents
 ```
 
-Transfers collected success fees to your wallet as USDC. Each call is capped per agent (`CLAIM_MAX_USD`); call again to claim any remainder.
+Transfers collected success fees to your wallet as USDC. Each call is capped per agent. If more remains after a claim, call again to claim the rest. Check `GET /api/v1/developers/earnings` for what is still claimable.
 
 Returns **404** if the agent is not found or not owned by the caller.
 
@@ -123,20 +129,20 @@ Claims all claimable subscription earnings as USDC into your EchoZero wallet. Re
 Returns **400** when there is nothing to claim. Call `GET /earnings` first to check `fromSubscriptions.claimableUsd`.
 
 <Warning>
-**Stripe Connect payouts are retired.** Subscribers still pay subscriptions by card, but your share is paid as USDC through the claim endpoint above. The old `/api/v1/developers/stripe-connect/*` routes return **410 Gone**. You do not need to onboard with Stripe.
+**Stripe Connect payouts are retired.** Subscribers still pay subscriptions by card, but your share is paid as USDC through the claim endpoint above. The retired routes under `/api/developers/stripe-connect/*` (no `/v1`) return **410 Gone**. You do not need to onboard with Stripe.
 </Warning>
 
 ## Typical workflow
 
 <Steps>
   <Step title="Register as a developer">
-    Complete developer registration in the [Dev Portal](https://devportal.echozero.app) or via `POST /api/v1/developers/register`.
+    Complete developer registration in the [Dev Portal](https://devportal.echozero.app) or via `POST /api/developers/register`. That route has no `/v1` and needs an authenticated user or API key.
   </Step>
   <Step title="Price your agent">
-    Set `pricingModel`, and `successFeePercent` (0-22) and/or `monthlyPrice`, when you create or update the agent.
+    Set `marketplacePricingModel`, and `marketplaceSuccessFeePercent` (0-22) and/or `marketplaceMonthlyPrice`, when you create or update the agent.
   </Step>
-  <Step title="Publish agents">
-    Publish to the marketplace. See [Agent lifecycle](/guides/agent-lifecycle).
+  <Step title="Request a listing">
+    Send `isPublic: true` to ask for a marketplace listing. Staff review it. See [Agent lifecycle](/guides/agent-lifecycle).
   </Step>
   <Step title="Monitor earnings">
     Poll `GET /v1/developers/earnings` for claimable balances and `GET /v1/developers/payouts` for weekly settlement history.

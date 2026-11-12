@@ -38,15 +38,16 @@ No developer API key. Authenticate with the per-agent signing secret (`ezw_...`)
 ```bash
 SECRET='ezw_...'
 TS=$(date +%s)
-CANON='{"text":"BUY SOL 500 USDC"}'
+# keys sorted alphabetically: idempotencyKey before text
+CANON='{"idempotencyKey":"my-bot-001","text":"BUY SOL 500 USDC"}'
 PAYLOAD="$TS.$CANON"
-SIG=$(printf '%s' "$PAYLOAD" | openssl dgst -sha256 -hmac "$SECRET" | awk '{print $2}')
+SIG=$(printf '%s' "$PAYLOAD" | openssl dgst -sha256 -hmac "$SECRET" | awk '{print $NF}')
 
 curl -X POST "https://mcp.echozero.app/api/public/agent-signals/$AGENT_ID" \
   -H "Content-Type: application/json" \
   -H "X-EZ-Timestamp: $TS" \
   -H "X-EZ-Signature: $SIG" \
-  -d '{"text":"BUY SOL 500 USDC"}'
+  -d "$CANON"
 ```
 
 ### SDK helpers
@@ -56,7 +57,7 @@ The [echozero-sdk](https://github.com/EchoZeroApp/echozero-sdk) provides `signIn
 ```typescript
 import { signInboundWebhook } from '@echozero/sdk';
 
-const body = { text: 'BUY SOL 500 USDC' };
+const body = { text: 'BUY SOL 500 USDC', idempotencyKey: 'my-bot-001' };
 const headers = await signInboundWebhook({
   signingSecret: process.env.EZW_SECRET!,
   body,
@@ -69,19 +70,33 @@ const headers = await signInboundWebhook({
 - Requests with timestamp skew beyond **±5 minutes** are rejected with **401**.
 - Use a unique `idempotencyKey` per signal so retries are safe no-ops.
 
-### Verify inbound (Python)
+### Sign or verify inbound (Python)
+
+Only the signing-eligible keys count, so filter the body to them before you serialize. Use `ensure_ascii=False`: the server signs accented characters and emoji as real characters, and Python's default escapes them, which gives a different signature.
 
 ```python
 import hmac, hashlib, json
 
-def verify_inbound(secret: str, body: dict, timestamp: str, signature: str) -> bool:
-    # Use SDK canonical_json in production; see signature test vectors
-    from echozero.hmac import canonical_webhook_body  # when SDK published
-    canon = json.dumps(body, sort_keys=True, separators=(",", ":"))
-    payload = f"{timestamp}.{canon}"
-    expected = hmac.new(secret.encode(), payload.encode(), hashlib.sha256).hexdigest()
-    return hmac.compare_digest(expected, signature)
+SIGNED_KEYS = {
+    "text", "idempotencyKey",
+    "action", "amount", "caption", "chain", "changes", "clientTimestamp",
+    "confidence", "context", "currentPnlPct", "entryPrice", "entryZone",
+    "eventType", "exitPrice", "exitReason", "expiresAt", "ideaId", "instrument",
+    "leverageX", "metadata", "orderType", "pnlPct", "positionRef",
+    "reasoning", "relatedTradeId", "riskMgmt", "sellSizePct", "side",
+    "symbol", "tokenAddress", "tradeType", "triggers", "urgency", "version",
+}
+
+def canonical_json(body: dict) -> str:
+    out = {k: v for k, v in body.items() if k in SIGNED_KEYS}
+    return json.dumps(out, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+
+def sign_inbound(secret: str, body: dict, timestamp: str) -> str:
+    payload = f"{timestamp}.{canonical_json(body)}"
+    return hmac.new(secret.encode(), payload.encode("utf-8"), hashlib.sha256).hexdigest()
 ```
+
+The Python SDK (`pip install echozero`, 0.2.0 or later) does this for you with `sign_inbound_webhook`.
 
 Golden vectors: [Signature test vectors](/guides/signature-test-vectors).
 
@@ -119,6 +134,10 @@ Use the **agent webhook signing secret** configured on the agent (`webhookUrl` +
   "timestamp": "2026-07-06T12:00:00.000Z"
 }
 ```
+
+<Note>
+The public API spec does not define the fields inside `executionResult`, so treat the ones above as an illustration. Build your handler on `event`, `signalId`, `status` and `timestamp`, and read other `executionResult` fields defensively. They can differ from the `executionResult` object returned by the inbound endpoint and the WebSocket gateway.
+</Note>
 
 ### Verify on your server
 

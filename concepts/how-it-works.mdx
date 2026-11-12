@@ -42,9 +42,9 @@ flowchart LR
 | Feed-only events | `trade_idea`, `position_update`, `trade_review` post to activity feed (no trade) |
 | Execution | Optional `signal.execution` callback to your `webhookUrl` |
 
-## Agent must be live
+## Agent status and listing
 
-Signals are only processed when the agent is in **`beta`** or **`public`** status. New agents start in **`pending-review`** until approved. See [Agent lifecycle](/guides/agent-lifecycle).
+New agents are private. Sending `isPublic: true` asks for a marketplace listing, which staff review, and `listingStatus` shows the result. If a signal comes back `skipped` with `agent_status_blocked`, the agent's status does not allow execution yet. See [Agent lifecycle](/guides/agent-lifecycle).
 
 ## Next steps
 
