@@ -10,30 +10,30 @@ AGENT_ID = os.environ["AGENT_ID"]
 SECRET = os.environ["EZW_SECRET"]
 BASE = "https://mcp.echozero.app/api/public/agent-signals"
 
-STRUCTURED_KEYS = {
-    "action", "amount", "chain", "changes", "clientTimestamp", "confidence",
-    "context", "currentPnlPct", "entryPrice", "entryZone", "eventType",
-    "exitPrice", "exitReason", "expiresAt", "ideaId", "instrument",
+# Every key the server includes in the signature (text and idempotencyKey too).
+SIGNED_KEYS = {
+    "text", "idempotencyKey",
+    "action", "amount", "caption", "chain", "changes", "clientTimestamp",
+    "confidence", "context", "currentPnlPct", "entryPrice", "entryZone",
+    "eventType", "exitPrice", "exitReason", "expiresAt", "ideaId", "instrument",
     "leverageX", "metadata", "orderType", "pnlPct", "positionRef",
     "reasoning", "relatedTradeId", "riskMgmt", "sellSizePct", "side",
     "symbol", "tokenAddress", "tradeType", "triggers", "urgency", "version",
 }
 
 def canonical_json(body: dict) -> str:
-    out = {}
-    if "text" in body:
-        out["text"] = body["text"]
-    if body.get("idempotencyKey", "").strip():
-        out["idempotencyKey"] = body["idempotencyKey"].strip()
-    for k in sorted(STRUCTURED_KEYS):
-        if k in body:
-            out[k] = body[k]
-    return json.dumps(out, separators=(",", ":"), sort_keys=True)
+    out = {k: v for k, v in body.items() if k in SIGNED_KEYS}
+    if "idempotencyKey" in out:
+        out["idempotencyKey"] = out["idempotencyKey"].strip()
+    # ensure_ascii=False keeps accents and emoji as real characters,
+    # which is what the server signs. The default would escape them.
+    return json.dumps(out, separators=(",", ":"), sort_keys=True, ensure_ascii=False)
 
 def sign_and_post(body: dict):
     ts = str(int(time.time()))
     canon = canonical_json(body)
     sig = hmac.new(SECRET.encode(), f"{ts}.{canon}".encode(), hashlib.sha256).hexdigest()
+    # Send the same canonical string that was signed, as UTF-8 bytes.
     return requests.post(
         f"{BASE}/{AGENT_ID}",
         headers={
@@ -41,7 +41,7 @@ def sign_and_post(body: dict):
             "X-EZ-Timestamp": ts,
             "X-EZ-Signature": sig,
         },
-        json=body,
+        data=canon.encode("utf-8"),
         timeout=30,
     ).json()
 
@@ -66,6 +66,30 @@ partial = sign_and_post({
     "reasoning": "Scale out half.",
 })
 print("partial", partial)
+
+# 3. Cancel (use this when a setup is invalidated before it fills)
+cancel = sign_and_post({
+    "eventType": "cancel",
+    "idempotencyKey": "py-demo-cancel-001",
+    "positionRef": "py-demo-entry-001",
+    "reasoning": "Setup invalidated.",
+})
+print("cancel", cancel)
 ```
 
-When published, use `echozero.sign_inbound_webhook` from the [SDK](/guides/sdk) instead of inline canonicalization.
+To skip the inline canonicalization, post through the published `echozero` package (0.2.0 or later), which signs for you. See the [SDK guide](/guides/sdk):
+
+```python
+from echozero import EchoZeroClient
+
+client = EchoZeroClient(api_key=os.environ["EZ_API_KEY"], hmac_secret_key=os.environ["EZ_SECRET_KEY"])
+result = client.post_agent_signal(
+    AGENT_ID,
+    {"text": "BUY SOL $100", "idempotencyKey": "entry-001"},
+    SECRET,
+)
+```
+
+`sign_inbound_webhook` returns just the `X-EZ-Timestamp` and `X-EZ-Signature` headers if you want to send the request yourself.
+
+A `caption` is part of the signature like every other field you send. Include it in `SIGNED_KEYS` (it is above) and it is signed correctly.

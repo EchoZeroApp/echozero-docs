@@ -46,16 +46,14 @@ TP3: 92.00 - sell 20%
 Per-agent `signalDetectionRule` can override buy/sell/TP/SL keyword lists. Test parsing:
 
 ```bash
-curl -sS -X POST "https://mcp.echozero.app/api/sandbox/agents/{agentId}/signals/simulate" \
-  -H "x-api-key: $EZ_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{ "message": "BUY SOL at $145, TP $160, SL $138" }'
+# ez is the signed helper from "API keys and HMAC"
+ez POST "/api/sandbox/agents/$AGENT_ID/signals/simulate" '{ "message": "BUY SOL at $145, TP $160, SL $138" }'
 ```
 
 ## Always include idempotency
 
 <Warning>
-Always send a stable `idempotencyKey` with NL text signals. Without it, a retried or replayed signed request can execute twice ([bug #391](https://github.com/EchoZeroApp)).
+Always send a stable `idempotencyKey` with NL text signals. A text signal sent without one is not deduplicated, so a retried or replayed signed request can execute twice.
 </Warning>
 
 ```json

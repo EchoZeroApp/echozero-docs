@@ -3,11 +3,23 @@ title: Relay a Telegram signal group
 description: Connect a Telegram channel to an EchoZero signal-group agent.
 ---
 
-1. Create agent with `signalSourceKind: signal_group` ([tutorial](/tutorials/first-agent))
-2. `GET /api/v1/agents/telegram/bot-metadata` for bot username
+The commands use the signed `ez` helper from [API keys and HMAC](/guides/api-keys-hmac#signed-request-helper).
+
+1. Create the agent. `agentVenue` cannot be changed later, and `name` is 20 characters at most:
+   ```bash
+   ez POST /api/v1/agents '{ "name": "My TG Signals", "signalSourceKind": "signal_group", "agentVenue": "JUPITER" }'
+   ```
+2. `ez GET /api/v1/agents/telegram/bot-metadata` for the bot username
 3. Add the EchoZero bot as admin to your channel
-4. `POST /api/v1/agents/{id}/telegram/verify` with `{ "channelUsername": "@YourChannel" }`
-5. Post `BUY SOL $500 TP 180 SL 165` in the channel
-6. Monitor `GET /api/v1/developers/agents/{id}/signals/ingest-log`
+4. Verify the channel. The body field is `channel`:
+   ```bash
+   ez POST "/api/v1/agents/$AGENT_ID/telegram/verify" '{ "channel": "@YourChannel" }'
+   ```
+   `verificationResult` is `verified`, `bot-not-found`, `insufficient-permissions` or `invalid_channel`.
+5. Post `BUY SOL $500 TP 180 SL 165` in the channel. Once verified, a line like this can execute real trades for subscribers, so try it in a private channel with no subscribers first.
+6. Monitor the ingest log. Filter with `outcome` (`matched`, `unmatched`, `failed`, `skipped`, `rate_limited`, `deduped`, `no_rule`, `prefix_skip`, `error`):
+   ```bash
+   ez GET "/api/v1/developers/agents/$AGENT_ID/signals/ingest-log?outcome=skipped"
+   ```
 
 See [Signal groups](/guides/signal-groups) and [Signal grammar](/guides/signal-grammar).

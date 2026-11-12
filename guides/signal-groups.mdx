@@ -15,39 +15,62 @@ Signal-group agents (`signalSourceKind: signal_group`) are for **Telegram channe
 
 <Steps>
   <Step title="Create a signal-group agent">
+    The examples use the signed `ez` helper from [API keys and HMAC](/guides/api-keys-hmac#signed-request-helper).
+
     ```bash
-    curl -sS -X POST https://mcp.echozero.app/api/v1/agents \
-      -H "x-api-key: $EZ_API_KEY" \
-      -H "Content-Type: application/json" \
-      -d '{
-        "name": "My TG Signals",
-        "signalSourceKind": "signal_group"
-      }'
+    ez POST /api/v1/agents '{
+      "name": "My TG Signals",
+      "signalSourceKind": "signal_group",
+      "agentVenue": "JUPITER"
+    }'
     ```
+
+    `name` is 20 characters at most. `agentVenue` is `JUPITER` (Solana spot) or `HYPERLIQUID` (perpetuals) and **cannot be changed after creation**. For Hyperliquid also send `"signalExecutionDefaults": { "marketType": "perpetual" }`; see the [Hyperliquid recipe](/recipes/hyperliquid-perp).
   </Step>
   <Step title="Get bot metadata">
     ```bash
-    curl -sS https://mcp.echozero.app/api/v1/agents/telegram/bot-metadata \
-      -H "x-api-key: $EZ_API_KEY"
+    ez GET /api/v1/agents/telegram/bot-metadata
     ```
 
     Add the EchoZero bot to your Telegram channel as admin. For Discord:
 
     ```bash
-    curl -sS https://mcp.echozero.app/api/v1/agents/discord/bot-metadata \
-      -H "x-api-key: $EZ_API_KEY"
+    ez GET /api/v1/agents/discord/bot-metadata
     ```
   </Step>
   <Step title="Verify channel connection">
-    **Telegram:** `POST /api/v1/agents/{id}/telegram/verify` with your channel `@username`.
+    **Telegram:** `POST /api/v1/agents/{id}/telegram/verify` with the body field `channel`. It accepts an `@username`, a `t.me` link, or a numeric chat id (`-100...`):
 
-    **Discord:** `GET /api/v1/agents/{id}/discord/oauth-url` → complete OAuth → `POST /api/v1/agents/{id}/discord/verify`.
+    ```bash
+    ez POST "/api/v1/agents/$AGENT_ID/telegram/verify" '{ "channel": "@YourChannel" }'
+    ```
+
+    The response has `verificationResult`:
+
+    | `verificationResult` | Meaning |
+    | --- | --- |
+    | `verified` | The bot is in the channel with the rights it needs |
+    | `bot-not-found` | The EchoZero bot is not in the channel yet |
+    | `insufficient-permissions` | The bot is in the channel but lacks admin rights |
+    | `invalid_channel` | The channel value could not be resolved |
+
+    A `message` field gives more detail, and a verified result also returns `channelId`, `channelName` and `memberCount`.
+
+    **Discord:** `GET /api/v1/agents/{id}/discord/oauth-url` → complete OAuth → `POST /api/v1/agents/{id}/discord/verify` with `channel` (a channel URL, `guildId/channelId`, or a channel id), or `guildId` and `channelId`. It returns the same `verificationResult` values.
+
+    <Warning>
+    After a channel is verified, lines posted in it are parsed and can execute real trades for your subscribers. Test parsing first with the [sandbox simulator](/guides/sandbox), or in a private channel with no subscribers.
+    </Warning>
   </Step>
   <Step title="Configure parsing">
     Set `signalDetectionRule` and optional `signalExecutionDefaults` on the agent via `PATCH /api/v1/agents/{id}`. See [Signal grammar](/guides/signal-grammar).
   </Step>
   <Step title="Monitor ingest">
-    `GET /api/v1/developers/agents/{id}/signals/ingest-log` shows parsed lines, match outcomes, and skip reasons.
+    `GET /api/v1/developers/agents/{id}/signals/ingest-log` shows parsed lines, match outcomes, and skip reasons. Filter with the `outcome` query parameter: `matched`, `unmatched`, `failed`, `skipped`, `rate_limited`, `deduped`, `no_rule`, `prefix_skip` or `error`.
+
+    ```bash
+    ez GET "/api/v1/developers/agents/$AGENT_ID/signals/ingest-log?outcome=skipped"
+    ```
   </Step>
 </Steps>
 

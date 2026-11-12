@@ -5,15 +5,54 @@ description: Send TradingView webhook alerts to an EchoZero inbound agent URL.
 
 TradingView cannot sign EchoZero canonical JSON natively. Use a small relay (Cloudflare Worker, AWS Lambda, or your server) that receives TradingView's POST, maps fields to EchoZero, signs with your agent's `ezw_` secret, and forwards to `inboundSignalsHttpUrl`.
 
-## TradingView alert message (example)
+## TradingView alert message
 
+TradingView sends the alert message as the request body. If the message is valid JSON, TradingView sends it as JSON. Otherwise it sends **plain text**, which a relay reading `req.body.ticker` will not see. Make the message JSON so the relay can read named fields:
+
+```json
+{"ticker":"{{ticker}}","close":{{close}},"alert_id":"{{timenow}}"}
 ```
-BUY {{ticker}} @ {{close}}
+
+Point the TradingView webhook URL at your relay, not directly at EchoZero. The relay below reads `ticker` and `alert_id` from that message and builds a natural-language signal such as `BUY SOL $500`. The `close` value is available to your relay if you want to use it, for example to add a stop. The relay does not forward the alert message text itself.
+
+## Relay (Node.js, with the SDK)
+
+`@echozero/sdk` 0.2.0 or later signs the body for you. `signInboundWebhook` returns the `X-EZ-Timestamp` and `X-EZ-Signature` headers.
+
+```javascript
+import { signInboundWebhook } from '@echozero/sdk';
+
+const AGENT_ID = process.env.AGENT_ID;
+const EZW_SECRET = process.env.EZW_SECRET;
+const SIZE_USD = Number(process.env.SIZE_USD ?? 500);
+const TARGET = `https://mcp.echozero.app/api/public/agent-signals/${AGENT_ID}`;
+
+export default async function handler(req, res) {
+  // TradingView sends JSON only when the alert message is valid JSON.
+  const tv = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body ?? {});
+  if (!tv.ticker) return res.status(400).send('alert message must be JSON with a ticker');
+
+  const body = {
+    text: `BUY ${tv.ticker} $${SIZE_USD}`,
+    // Stable per alert, so a TradingView retry does not execute twice.
+    idempotencyKey: `tv-${tv.alert_id ?? Date.now()}`,
+  };
+
+  const headers = await signInboundWebhook({ signingSecret: EZW_SECRET, body });
+
+  const upstream = await fetch(TARGET, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...headers },
+    body: JSON.stringify(body),
+  });
+
+  res.status(upstream.status).send(await upstream.text());
+}
 ```
 
-Configure the webhook URL to point at your relay, not directly at EchoZero.
+## Relay (Node.js, no SDK)
 
-## Relay (Node.js)
+If you cannot use the SDK, sign it yourself. The signature covers `${seconds}.${canonicalJson}`, where the JSON keeps only the signed keys and sorts keys alphabetically at every level. The relay sends the same string it signed.
 
 ```javascript
 import crypto from 'node:crypto';
@@ -22,13 +61,16 @@ const AGENT_ID = process.env.AGENT_ID;
 const EZW_SECRET = process.env.EZW_SECRET;
 const TARGET = `https://mcp.echozero.app/api/public/agent-signals/${AGENT_ID}`;
 
-const STRUCTURED_KEYS = [
-  'action', 'amount', 'chain', 'changes', 'clientTimestamp', 'confidence', 'context',
-  'currentPnlPct', 'entryPrice', 'entryZone', 'eventType', 'exitPrice', 'exitReason',
-  'expiresAt', 'ideaId', 'instrument', 'leverageX', 'metadata', 'orderType', 'pnlPct',
-  'positionRef', 'reasoning', 'relatedTradeId', 'riskMgmt', 'sellSizePct', 'side',
-  'symbol', 'tokenAddress', 'tradeType', 'triggers', 'urgency', 'version',
-];
+// Every top-level key the server includes in the signature.
+const SIGNED_KEYS = new Set([
+  'text', 'idempotencyKey',
+  'action', 'amount', 'caption', 'chain', 'changes', 'clientTimestamp', 'confidence',
+  'context', 'currentPnlPct', 'entryPrice', 'entryZone', 'eventType', 'exitPrice',
+  'exitReason', 'expiresAt', 'ideaId', 'instrument', 'leverageX', 'metadata',
+  'orderType', 'pnlPct', 'positionRef', 'reasoning', 'relatedTradeId', 'riskMgmt',
+  'sellSizePct', 'side', 'symbol', 'tokenAddress', 'tradeType', 'triggers',
+  'urgency', 'version',
+]);
 
 function stableJson(value) {
   if (value === null || typeof value !== 'object') return JSON.stringify(value);
@@ -42,31 +84,29 @@ function stableJson(value) {
 
 function canonicalBody(body) {
   const out = {};
-  if (body.text !== undefined) out.text = body.text;
-  if (body.idempotencyKey?.trim()) out.idempotencyKey = body.idempotencyKey.trim();
-  for (const key of STRUCTURED_KEYS.sort()) {
-    if (body[key] !== undefined) out[key] = body[key];
+  for (const key of Object.keys(body)) {
+    if (SIGNED_KEYS.has(key) && body[key] !== undefined) out[key] = body[key];
   }
+  // Trim once, so the signed value and the sent value are the same.
+  if (typeof out.idempotencyKey === 'string') out.idempotencyKey = out.idempotencyKey.trim();
   return stableJson(out);
 }
 
-function sign(body) {
+function sign(canon) {
   const ts = String(Math.floor(Date.now() / 1000));
-  const canon = canonicalBody(body);
-  const sig = crypto
-    .createHmac('sha256', EZW_SECRET)
-    .update(`${ts}.${canon}`)
-    .digest('hex');
-  return { ts, sig, canon };
+  const sig = crypto.createHmac('sha256', EZW_SECRET).update(`${ts}.${canon}`).digest('hex');
+  return { ts, sig };
 }
 
 export default async function handler(req, res) {
-  const tv = req.body ?? {};
-  const idempotencyKey = `tv-${tv.alert_id ?? tv.timenow ?? Date.now()}`;
-  const text = `BUY ${tv.ticker ?? 'SOL'} $500`;
+  const tv = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body ?? {});
+  if (!tv.ticker) return res.status(400).send('alert message must be JSON with a ticker');
 
-  const body = { text, idempotencyKey };
-  const { ts, sig } = sign(body);
+  const canon = canonicalBody({
+    text: `BUY ${tv.ticker} $500`,
+    idempotencyKey: `tv-${tv.alert_id ?? Date.now()}`,
+  });
+  const { ts, sig } = sign(canon);
 
   const upstream = await fetch(TARGET, {
     method: 'POST',
@@ -75,32 +115,24 @@ export default async function handler(req, res) {
       'X-EZ-Timestamp': ts,
       'X-EZ-Signature': sig,
     },
-    body: JSON.stringify(body),
+    body: canon, // the exact string that was signed
   });
 
   res.status(upstream.status).send(await upstream.text());
 }
 ```
 
-## Relay (bash + curl smoke test)
+If you send a `caption`, it is signed like every other field. It is in `SIGNED_KEYS` above.
+
+## Smoke test (bash)
+
+Use the `ezw` helper from the [Quickstart](/quickstart#step-4-send-a-test-signal). It sorts the keys, signs and sends:
 
 ```bash
-AGENT_ID="..."
-EZW_SECRET="ezw_..."
-TS=$(date +%s)
-CANON='{"idempotencyKey":"tv-smoke-001","text":"BUY SOL $500"}'
-SIG=$(printf '%s' "$TS.$CANON" | openssl dgst -sha256 -hmac "$EZW_SECRET" | awk '{print $2}')
-
-curl -sS -X POST "https://mcp.echozero.app/api/public/agent-signals/$AGENT_ID" \
-  -H "Content-Type: application/json" \
-  -H "X-EZ-Timestamp: $TS" \
-  -H "X-EZ-Signature: $SIG" \
-  -d '{"text":"BUY SOL $500","idempotencyKey":"tv-smoke-001"}'
+export AGENT_ID="..."
+export EZW_SECRET="ezw_..."
+ezw '{"text":"BUY SOL $500","idempotencyKey":"tv-smoke-001"}'
 ```
-
-## SDK helper (when published)
-
-When `@echozero/sdk` ships to npm, replace manual signing with `signInboundWebhook` from the [SDK guide](/guides/sdk). Until then, use [Signature test vectors](/guides/signature-test-vectors) or the canonicalizer above.
 
 <Warning>
 Always set `idempotencyKey` from TradingView's `alert_id` or `timenow` so retries do not double-execute.
