@@ -138,7 +138,7 @@ Persona tools are scope-gated like the other agent tools. If a call returns 403,
 
 ## Admin tools (`admin:*` only)
 
-These are for platform operators and are not meant for developer keys: `get_user_details`, `find_users`, `get_revenue_summary`, `get_platform_health`, `get_error_dashboard`, `get_admin_audit_log`, `force_password_reset`, `create_notification_segment`, `flag_developer_agent`, `kyc_override`, `approve_admin_action`, and two-step `propose_` / `confirm_` pairs for force-closing strategies, freezing and unfreezing wallets, issuing refunds, pausing all trades, and suspending and unsuspending users.
+Admin tools exist only for platform staff and are not available to developer keys or OAuth tokens issued to developers.
 
 ## Example `tools/call`
 
