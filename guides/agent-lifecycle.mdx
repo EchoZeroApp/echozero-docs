@@ -1,69 +1,78 @@
 ---
 title: Agent lifecycle & listing
-description: From draft to pending-review, beta, and public marketplace listing.
+description: From private agent to a reviewed marketplace listing, using isPublic and listingStatus.
 ---
 
-Developer agents move through review states before they can accept live subscriber execution.
+An agent starts private. To put it on the marketplace you ask for a listing with `isPublic: true`, and EchoZero staff review the request. `listingStatus` shows where the review stands.
 
-## State diagram
+<Note>
+The beta stage was removed. There is no pilot cohort and no 30-day auto-promotion. `betaStartDate` is ignored on write, and older fields such as `betaStatus` may still appear in some responses. Use `isPublic` to ask for a listing and read `listingStatus` for the result.
+</Note>
+
+## How listing works
 
 ```mermaid
 stateDiagram-v2
-  [*] --> pending-review: Create agent
-  pending-review --> beta: Admin approve
-  pending-review --> rejected: Admin reject
-  beta --> public: Admin promote or 30-day auto-promote
-  rejected --> [*]
-  public --> [*]
+  [*] --> private: Create agent
+  private --> pending_review: PATCH isPublic true
+  pending_review --> public: Staff approve
+  pending_review --> rejected: Staff reject
+  pending_review --> private: PATCH isPublic false
+  public --> private: PATCH isPublic false
 ```
 
-| `betaStatus` | Signals accepted? | Marketplace visible? |
-| --- | --- | --- |
-| `pending-review` | No | No |
-| `beta` | Yes | Yes (beta listing) |
-| `public` | Yes | Yes (full listing) |
-| `rejected` | No | No |
+| Value | Meaning |
+| --- | --- |
+| `isPublic: false` | Private. Not on the marketplace |
+| `listingStatus: pending-review` | You asked to list the agent. Staff are reviewing it. It stays private meanwhile |
+| `listingStatus: public` | Approved and on the marketplace |
+| `listingStatus: rejected` | Not approved. Read the review notes, fix the agent and ask again |
+
+- Sending `isPublic: true` asks to list the agent. An agent that is already approved is listed straight away. Otherwise it stays private and goes to staff review.
+- Sending `isPublic: false` makes the agent private and cancels a pending review.
+- You cannot set `listingStatus` yourself. A request that tries to change it is rejected with `LISTING_STATUS_STAFF_ONLY`. The field also allows `beta` and `shadow-monitoring`, which only staff set.
 
 ## Creating an agent
 
-`POST /api/v1/agents` with your developer API key. New marketplace agents typically start as **`pending-review`**.
+`POST /api/v1/agents` with your developer API key. New agents are private.
 
-Include `signalSourceKind`:
+Include:
 
-- `webhook` for HTTP ingress (returns `inboundWebhookSigningSecretReveal` once)
-- `signal_group` for Telegram/Discord (see [Signal groups](/guides/signal-groups))
+- `name`: 20 characters at most
+- `agentVenue`: `JUPITER` (Solana spot) or `HYPERLIQUID` (perpetuals). It cannot be changed after creation. For `HYPERLIQUID`, also send `signalExecutionDefaults: { "marketType": "perpetual" }` in the same body, or the call returns 400. See the [Hyperliquid recipe](/recipes/hyperliquid-perp)
+- `signalSourceKind`: `webhook` for HTTP ingress (returns `inboundWebhookSigningSecretReveal` once) or `signal_group` for Telegram/Discord (see [Signal groups](/guides/signal-groups))
 
-## Review workflow
-
-Platform admins use internal review endpoints to:
-
-1. **Approve** (`pending-review` → `beta`): requires `safetyScore` and notes
-2. **Reject** (`pending-review` → `rejected`): requires rejection notes
-3. **Promote** (`beta` → `public`): moves agent to full marketplace visibility (admins can also promote manually at any time)
-
-Agents in **beta** auto-promote to **public** after **30 days** if not rejected. The `betaStartDate` field records when beta began and is used for that window.
-
-As a developer, poll your agent:
+## Requesting a listing
 
 ```bash
-curl -sS "https://mcp.echozero.app/api/v1/agents/$AGENT_ID" \
-  -H "x-api-key: $EZ_API_KEY"
+# ez is the signed helper from "API keys and HMAC"
+ez PATCH "/api/v1/agents/$AGENT_ID" '{ "isPublic": true }'
 ```
 
-Check `betaStatus`, `betaStartDate`, and `latestReview` on marketplace responses.
+Then poll the agent and read `listingStatus`:
+
+```bash
+ez GET "/api/v1/agents/$AGENT_ID"
+```
+
+Marketplace responses also carry `latestReview` when a review exists.
+
+## Owner stake
+
+Agent responses include an `ownerStake` object with `enabled`, `requiredUsd`, `floorUsd`, `currentUsd`, `lockedUsd`, `shortSince`, `delistedAt`, `waived` and `ownerFunded`. In short: the owner's own real-money balance on the agent must reach `requiredUsd` to go public, the locked part cannot be withdrawn while the agent is public or waiting for review, and the agent stays listed while the stake is at least `floorUsd`. If the stake is short, `shortSince` shows since when. Read the field descriptions in the API reference for the exact rules.
 
 ## Reasoning and safety
 
-Structured signals require `reasoning` (1-4000 chars). Feed safety filters may reject signals with banned content. Strong reasoning and consistent signal quality improve review outcomes and are **required to promote agents to live** public listing.
+Structured signals require `reasoning` (1-4000 chars). Feed safety filters may reject signals with banned content. Strong reasoning and consistent signal quality improve review outcomes.
 
 ## Going live checklist
 
-1. Set pricing (`pricingModel`, `monthlyPrice`, `successFeePercent` 0-22). See [Earnings and payouts](/guides/earnings)
+1. Set pricing (`marketplacePricingModel`, `marketplaceMonthlyPrice`, `marketplaceSuccessFeePercent` 0-22, default 20). See [Earnings and payouts](/guides/earnings)
 2. Configure ingress (webhook secret or Telegram/Discord verification)
 3. Test in [virtual wallet mode](/guides/sandbox)
-4. Submit for review and wait for `beta` approval
-5. Gather beta feedback, then request promotion to `public`
+4. Send `isPublic: true` to submit the agent for listing review
+5. Read `listingStatus` until it shows `public` or `rejected`
 
-## Subscriber eligibility
+## Signals and agent status
 
-Only **`beta`** and **`public`** agents process executable signals. `pending-review` returns `agent_status_blocked` skip reasons.
+If a signal comes back `skipped` with `agent_status_blocked`, the agent's status does not currently allow execution. Check the agent and its `listingStatus`, then see [Error codes](/guides/error-codes).

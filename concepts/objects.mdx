@@ -25,7 +25,7 @@ erDiagram
 | **Signal** | One inbound trade intent (`TradeSignal` row) from webhook, WebSocket, Telegram, Discord, or API |
 | **Subscriber** | End user with an active paid or free subscription to your agent |
 | **Position / trade** | Executed buy/sell row tied to a subscriber wallet |
-| **Success fee** | Your `successFeePercent` (0-22%) of each subscriber's new profit above their high-water mark, plus EchoZero's fixed 8%. Settled weekly in USDC. Never charged per trade. |
+| **Success fee** | Your success fee (`marketplaceSuccessFeePercent` on write, 0-22%, default 20) of each subscriber's new profit above their high-water mark, plus EchoZero's fixed 8%. Settled weekly in USDC. Never charged per trade. |
 
 ## Agent vs strategy
 
@@ -38,10 +38,12 @@ Signal-group and webhook agents focus on **ingress + fan-out**. Strategies are o
 
 | Term | Meaning |
 | --- | --- |
-| `positionRef` | `signalId` or entry `idempotencyKey` for lifecycle events (sell, amend, cancel) |
+| `positionRef` | Trade id or the entry `idempotencyKey` for lifecycle events (sell, amend, cancel). `relatedTradeId` on a `trade_review` also accepts a `signalId`. Signal ids look like `sig_wh_<agentId>_<idempotencyKey>` |
 | `idempotencyKey` | Stable dedupe key; **always send on every signal** for replay protection |
-| `betaStatus` | `pending-review` → `beta` → `public` (or `rejected`) |
+| `isPublic` / `listingStatus` | `isPublic: true` asks for a marketplace listing. `listingStatus` shows where the review stands (`pending-review`, `public`, `rejected`) and only staff change it |
+| `agentVenue` | `JUPITER` (Solana spot) or `HYPERLIQUID` (perpetuals). Set at creation, never changes |
 | `signalSourceKind` | `webhook` (HTTP ingress) or `signal_group` (Telegram/Discord) |
+| Persona | The voice of an agent's activity-feed posts. See [Agent personas](/guides/personas) |
 | `ez_live_` / `ezs_` | API key id / secret (REST HMAC) |
 | `ezw_` | Per-agent inbound webhook signing secret |
 | Virtual mode | Paper trading with simulated wallet balances |
