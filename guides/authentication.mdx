@@ -9,7 +9,7 @@ EchoZero uses **five credential types**. Pick the one that matches your integrat
 
 | I am building… | Credential | Where to get it |
 | --- | --- | --- |
-| Server REST integration | API key (`ez_live_`) + optional secret (`ezs_`) | [Dev Portal](https://devportal.echozero.app) |
+| Server REST integration | API key (`ez_live_`) + secret (`ezs_`), used to sign each request | [Dev Portal](https://devportal.echozero.app) |
 | AI assistant / MCP client | OAuth bearer token **or** API key | [OAuth flow](/guides/oauth) or Dev Portal |
 | Inbound agent webhook | Per-agent secret (`ezw_`) | Agent create / rotate response |
 | Outbound execution callback | Agent `webhookUrl` signing secret | Agent configuration |
@@ -17,12 +17,14 @@ EchoZero uses **five credential types**. Pick the one that matches your integrat
 
 ## API key + REST HMAC
 
+Every API-key request must carry `x-api-key`, `x-timestamp` (epoch milliseconds) and `x-signature` (HMAC-SHA256 of `timestamp + METHOD + path + body`, signed with your `ezs_` secret). The secret is required, not optional. A request with only `x-api-key` returns 401.
+
 ```bash
-curl https://mcp.echozero.app/api/v1/users/me \
-  -H "x-api-key: ez_live_..."
+# ez is the signing helper from "API keys and HMAC"
+ez GET /api/v1/users/me
 ```
 
-Required HMAC signing for API-key routes. See [API keys + HMAC](/guides/api-keys-hmac).
+See [API keys + HMAC](/guides/api-keys-hmac) for the helper and the signing rules.
 
 ## OAuth (assistants)
 
@@ -39,20 +41,24 @@ Different algorithm from REST HMAC. See [Webhook security](/guides/webhook-secur
 
 ## Scopes
 
-OAuth and API keys share the same scope strings. Prefer the `read:*` / `write:*` form:
+OAuth and API keys share the same scope strings. This is the one scope table for all the docs. It matches the `scopes` enum in the API key schema of the [OpenAPI spec](https://mcp.echozero.app/api/docs-json).
 
 | Scope | Access |
 | --- | --- |
-| `read:agents` / `write:agents` | Agent CRUD |
-| `read:strategies` / `write:strategies` | Strategy bots |
-| `read:wallet` / `write:wallet` | Wallet and virtual mode |
-| `read:trades` | Trade history |
-| `trades:execute` | Trade execution (legacy alias; prefer `write:wallet` + agent flows) |
+| `read:agents` / `write:agents` | Agent CRUD, webhook provisioning, personas |
+| `read:strategies` / `write:strategies` | Strategy bots and configuration |
+| `read:wallet` / `write:wallet` | Wallet balances, wallet mode, virtual funds |
+| `read:trades` | Trade and signal history |
+| `read:tokens` | Token metadata and trending |
 | `read:earn` | Earnings and claims |
-| `read:ai` / `write:ai` | AI chat tools |
-| `admin:*` | Platform admin only (not available via OAuth) |
+| `read:analytics` | Dashboard analytics |
+| `read:ai` / `write:ai` | AI chat and tooling |
+| `read:notifications` / `write:notifications` | Notifications and notification settings |
+| `admin:*` | Platform admin only. Cannot be created through the API and is not available via OAuth |
 
-Legacy aliases (`agents:read`, `bots:write`, etc.) still work.
+Legacy scope names are also in the API's scope list: `agents:read`, `agents:write`, `trades:read`, `trades:execute`, `bots:read`, `bots:write`, `marketplace:read` and `ai:chat`. Prefer the `read:*` / `write:*` names. The published assistant directory manifests do not request `trades:execute` or the legacy names.
+
+The API reference shows the scope a route needs where the spec states one. Where it does not, call the route with a test key and read the 403 if you lack it.
 
 ## MCP authentication
 

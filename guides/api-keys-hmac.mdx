@@ -3,6 +3,10 @@ title: API keys and HMAC signing
 description: Authenticate REST and MCP requests with API keys and required request signing.
 ---
 
+<Note>
+Every call authenticated with an API key needs `x-api-key`, `x-timestamp` and `x-signature`. Sending only `x-api-key` returns 401. The `ezs_` secret is not optional.
+</Note>
+
 ## API key authentication
 
 Send your developer API key on every authenticated request using either header:
@@ -19,15 +23,9 @@ curl https://mcp.echozero.app/api/v1/users/me \
 
 Create and revoke keys in the [Dev Portal](https://devportal.echozero.app). Each key has scoped permissions - request only the scopes your integration needs.
 
-### Common scopes
+### Scopes
 
-| Scope | Typical use |
-| --- | --- |
-| `read:agents` / `write:agents` | Agent CRUD, webhook provisioning |
-| `read:strategies` / `write:strategies` | Strategy configuration |
-| `read:wallet` / `write:wallet` | Balances, virtual mode |
-| `read:trades` | Trade and signal history |
-| `read:earn` | Earnings and claims |
+Each key carries scopes. The full list is in [Authentication overview](/guides/authentication#scopes); request only what your integration needs.
 
 ## Required REST HMAC signing
 
@@ -53,14 +51,50 @@ stringToSign = timestamp + METHOD + path + body
 REST HMAC uses **milliseconds** and includes the HTTP method and path. This is **different** from [inbound agent webhook](/guides/webhook-security) signing, which uses **seconds** and canonical JSON only.
 </Warning>
 
+### Signed request helper
+
+Every REST example in these docs uses this small shell function. Paste it into your shell once, after exporting `EZ_API_KEY` and `EZ_SECRET`:
+
+```bash
+# Signed REST helper: ez METHOD PATH [JSON_BODY]
+# Needs EZ_API_KEY (ez_live_...) and EZ_SECRET (ezs_...). Works in bash and zsh.
+ez() {
+  local method="$1" req_path="$2" body="${3:-}"
+  local ts sig
+  local args=()
+  [ -n "$body" ] && args=(-d "$body")
+  ts=$(python3 -c 'import time;print(int(time.time()*1000))')
+  sig=$(printf '%s' "${ts}${method}${req_path}${body}" | openssl dgst -sha256 -hmac "$EZ_SECRET" | awk '{print $NF}')
+  curl -sS -X "$method" "https://mcp.echozero.app${req_path}" \
+    -H "x-api-key: $EZ_API_KEY" \
+    -H "x-timestamp: $ts" \
+    -H "x-signature: $sig" \
+    -H "Content-Type: application/json" \
+    "${args[@]}"
+}
+```
+
+```bash
+ez GET /api/v1/users/me
+ez POST /api/v1/wallet/mode '{"isVirtualMode":true}'
+```
+
+Pass the path exactly as you want it requested, including any query string, because the query string is part of the signed text.
+
+<Note>
+The timestamp comes from `python3` on purpose. `date +%s%3N` only works on GNU/Linux. On macOS it prints a literal `N`, and the call fails with `Invalid x-timestamp value`. A perl one-liner such as `perl -MTime::HiRes=time -e 'printf "%d", time*1000'` works too.
+</Note>
+
 ### curl example (GET)
+
+The helper above does the following, written out step by step:
 
 ```bash
 API_KEY="ez_live_..."
 SECRET="ezs_..."   # secret shown once at key creation
-TS=$(date +%s%3N)
+TS=$(python3 -c 'import time;print(int(time.time()*1000))')
 REQ_PATH="/api/v1/users/me"
-SIG=$(printf '%s' "${TS}GET${REQ_PATH}" | openssl dgst -sha256 -hmac "$SECRET" | awk '{print $2}')
+SIG=$(printf '%s' "${TS}GET${REQ_PATH}" | openssl dgst -sha256 -hmac "$SECRET" | awk '{print $NF}')
 
 curl -sS "https://mcp.echozero.app${REQ_PATH}" \
   -H "x-api-key: $API_KEY" \
@@ -70,13 +104,15 @@ curl -sS "https://mcp.echozero.app${REQ_PATH}" \
 
 ### curl example (POST)
 
+This example posts to the sandbox signal simulator, which has no side effects. Use an agent id you own.
+
 ```bash
 API_KEY="ez_live_..."
 SECRET="ezs_..."
-TS=$(date +%s%3N)
-REQ_PATH="/api/api-keys"
-BODY='{"name":"HMAC Test Key"}'
-SIG=$(printf '%s' "${TS}POST${REQ_PATH}${BODY}" | openssl dgst -sha256 -hmac "$SECRET" | awk '{print $2}')
+TS=$(python3 -c 'import time;print(int(time.time()*1000))')
+REQ_PATH="/api/sandbox/agents/$AGENT_ID/signals/simulate"
+BODY='{"message":"BUY SOL $50"}'
+SIG=$(printf '%s' "${TS}POST${REQ_PATH}${BODY}" | openssl dgst -sha256 -hmac "$SECRET" | awk '{print $NF}')
 
 curl -sS -X POST "https://mcp.echozero.app${REQ_PATH}" \
   -H "x-api-key: $API_KEY" \

@@ -1,9 +1,9 @@
 ---
 title: Quickstart
-description: Authenticate and send your first signal in under 5 minutes.
+description: Sign your first API call and send a test signal in a few minutes.
 ---
 
-Get from zero to a signed API call and optional test signal. For the full end-to-end path, start with [Build your first agent](/tutorials/first-agent).
+Get from zero to a signed API call and an optional test signal. Every API-key call is signed, so this page sets up a small helper first. For the full end-to-end path, start with [Build your first agent](/tutorials/first-agent).
 
 ## Choose your path
 
@@ -13,33 +13,59 @@ Get from zero to a signed API call and optional test signal. For the full end-to
 | AI assistant (Claude, ChatGPT) | [OAuth](/guides/oauth) or [MCP](/guides/mcp) |
 | Telegram / Discord operator | [Signal groups](/guides/signal-groups) |
 
-## Step 0: Get your API key
+## Step 0: Get your API key and set up signing
 
 1. Sign in at [devportal.echozero.app](https://devportal.echozero.app)
 2. Register as a developer
 3. Create an API key
-4. Copy **`ez_live_...`** and **`ezs_...`** (secret shown once)
+4. Copy **`ez_live_...`** and **`ezs_...`** (the secret is shown once)
 
 ```bash
 export EZ_API_KEY="ez_live_..."
 export EZ_SECRET="ezs_..."
 ```
 
+REST calls made with an API key need three headers: `x-api-key`, `x-timestamp` (epoch milliseconds) and `x-signature` (HMAC-SHA256 of `timestamp + METHOD + path + body`, signed with your `ezs_` secret). Sending only `x-api-key` returns 401. Paste this helper into your shell once and use it for every call below:
+
+```bash
+# Signed REST helper: ez METHOD PATH [JSON_BODY]
+# Needs EZ_API_KEY (ez_live_...) and EZ_SECRET (ezs_...). Works in bash and zsh.
+ez() {
+  local method="$1" req_path="$2" body="${3:-}"
+  local ts sig
+  local args=()
+  [ -n "$body" ] && args=(-d "$body")
+  ts=$(python3 -c 'import time;print(int(time.time()*1000))')
+  sig=$(printf '%s' "${ts}${method}${req_path}${body}" | openssl dgst -sha256 -hmac "$EZ_SECRET" | awk '{print $NF}')
+  curl -sS -X "$method" "https://mcp.echozero.app${req_path}" \
+    -H "x-api-key: $EZ_API_KEY" \
+    -H "x-timestamp: $ts" \
+    -H "x-signature: $sig" \
+    -H "Content-Type: application/json" \
+    "${args[@]}"
+}
+```
+
+It needs `curl`, `openssl` and `python3`, which come with macOS and most Linux systems. See [API keys and HMAC](/guides/api-keys-hmac) for how the signature is built, and the SDKs if you would rather not sign by hand.
+
 ## Step 1: Verify the API
+
+The health check is public and needs no key:
 
 ```bash
 curl -sS https://mcp.echozero.app/api
 ```
 
 ```json
-{ "success": true, "data": { "status": "ok" } }
+{ "success": true, "data": { "Status": "Success" } }
 ```
+
+Note the capital `S` in `Status`.
 
 ## Step 2: Authenticate
 
 ```bash
-curl -sS https://mcp.echozero.app/api/v1/users/me \
-  -H "x-api-key: $EZ_API_KEY"
+ez GET /api/v1/users/me
 ```
 
 **Expected:**
@@ -56,21 +82,24 @@ curl -sS https://mcp.echozero.app/api/v1/users/me \
 
 <Check>You are authenticated when `success` is `true` and `data.id` is present.</Check>
 
-Getting **401**? See [Error codes](/guides/error-codes).
+Getting **401**? Check that all three headers are sent and that your clock is within 5 minutes. See [Error codes](/guides/error-codes).
 
 ## Step 3: Create a webhook agent (optional)
 
 ```bash
-curl -sS -X POST https://mcp.echozero.app/api/v1/agents \
-  -H "x-api-key: $EZ_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Quickstart Agent",
-    "signalSourceKind": "webhook"
-  }'
+ez POST /api/v1/agents '{
+  "name": "Quickstart Agent",
+  "signalSourceKind": "webhook",
+  "agentVenue": "JUPITER"
+}'
 ```
 
-**Expected:**
+Two fields to get right the first time:
+
+- **`agentVenue`** is `JUPITER` (Solana spot) or `HYPERLIQUID` (perpetuals). It is set at creation and **cannot be changed later**. To use the other venue, create a new agent. For a Hyperliquid agent, also send `"signalExecutionDefaults": { "marketType": "perpetual" }` in the same body, or the call returns a bare 400. See the [Hyperliquid recipe](/recipes/hyperliquid-perp).
+- **`name`** is 20 characters at most.
+
+**Expected (abbreviated):**
 
 ```json
 {
@@ -79,33 +108,46 @@ curl -sS -X POST https://mcp.echozero.app/api/v1/agents \
     "id": "674a1b2c3d4e5f6789012345",
     "name": "Quickstart Agent",
     "signalSourceKind": "webhook",
-    "betaStatus": "pending-review",
     "inboundWebhookSigningSecretReveal": "ezw_...",
     "inboundSignalsHttpUrl": "https://mcp.echozero.app/api/public/agent-signals/674a1b2c3d4e5f6789012345"
   }
 }
 ```
 
-Save `inboundWebhookSigningSecretReveal` (`ezw_...`) from the response.
+Save `inboundWebhookSigningSecretReveal` (`ezw_...`) from the response. It is shown once.
+
+A new agent is private. It is only listed on the marketplace after you send `isPublic: true` and staff approve it. See [Agent lifecycle](/guides/agent-lifecycle).
 
 ## Step 4: Send a test signal
 
-Requires agent in `beta` or `public`. Use [virtual wallet](/guides/sandbox) while in review.
+Inbound signals use a different signature from REST calls: the per-agent `ezw_` secret, a timestamp in **seconds**, and the body written as **canonical JSON** (keys sorted alphabetically, compact). `jq -S -c` does that for you. This helper signs and sends in one step:
+
+```bash
+# Signed inbound-signal helper: ezw '<json body>'
+# Needs AGENT_ID, EZW_SECRET (ezw_...) and jq. Works in bash and zsh.
+ezw() {
+  local canon ts sig
+  canon=$(printf '%s' "$1" | jq -S -c .)   # sorted keys, compact
+  ts=$(date +%s)                            # epoch seconds
+  sig=$(printf '%s' "${ts}.${canon}" | openssl dgst -sha256 -hmac "$EZW_SECRET" | awk '{print $NF}')
+  curl -sS -X POST "https://mcp.echozero.app/api/public/agent-signals/$AGENT_ID" \
+    -H "Content-Type: application/json" \
+    -H "X-EZ-Timestamp: $ts" \
+    -H "X-EZ-Signature: $sig" \
+    -d "$canon"
+}
+```
 
 ```bash
 export AGENT_ID="<agent id>"
 export EZW_SECRET="<ezw secret>"
 
-TS=$(date +%s)
-CANON='{"text":"BUY SOL $50","idempotencyKey":"quickstart-001"}'
-SIG=$(printf '%s' "$TS.$CANON" | openssl dgst -sha256 -hmac "$EZW_SECRET" | awk '{print $2}')
-
-curl -sS -X POST "https://mcp.echozero.app/api/public/agent-signals/$AGENT_ID" \
-  -H "Content-Type: application/json" \
-  -H "X-EZ-Timestamp: $TS" \
-  -H "X-EZ-Signature: $SIG" \
-  -d '{"text":"BUY SOL $50","idempotencyKey":"quickstart-001"}'
+ezw '{"text":"BUY SOL $50","idempotencyKey":"quickstart-001"}'
 ```
+
+The signed text for that body is `{"idempotencyKey":"quickstart-001","text":"BUY SOL $50"}`, with `idempotencyKey` before `text`. If you sign the keys in any other order the server rejects the signature.
+
+Use [virtual wallet mode](/guides/sandbox) so test signals use simulated balances.
 
 **Success:**
 
@@ -119,11 +161,13 @@ curl -sS -X POST "https://mcp.echozero.app/api/public/agent-signals/$AGENT_ID" \
 }
 ```
 
+If you get `outcome: skipped`, read `skipReason`. See [Error codes](/guides/error-codes).
+
 ## Step 5: Explore further
 
 <CardGroup cols={2}>
-  <Card title="API Reference" icon="code" href="/api-reference">
-    Curated OpenAPI docs and try-it console.
+  <Card title="API conventions" icon="code" href="/guides/conventions">
+    Response envelopes, pagination and rate limits. Then open the API Reference tab for every endpoint and a try-it console.
   </Card>
   <Card title="OpenAPI JSON" icon="file-code" href="https://mcp.echozero.app/api/docs-json">
     Download the machine-readable spec.
@@ -136,14 +180,12 @@ curl -sS -X POST "https://mcp.echozero.app/api/public/agent-signals/$AGENT_ID" \
   </Card>
 </CardGroup>
 
-## Assistant setup (coming soon)
+## Assistant setup
 
-<Note>
-**Coming soon:** The public skills pack (`EchoZeroApp/skills`) and `ez login` CLI are not yet available. Use [OAuth](/guides/oauth) or API keys until the skills repo is published.
-</Note>
+The `ez` CLI (`@echozero/ez` on npm) signs you in with OAuth and wires up your assistant:
 
 ```bash
-# When available:
-npx skills add EchoZeroApp/skills
-ez login
+npx @echozero/ez login --client claude    # or: codex, openclaw
 ```
+
+The skills pack (`EchoZeroApp/skills`) is not public yet. Until it is, use the CLI, [OAuth](/guides/oauth) or an API key.
