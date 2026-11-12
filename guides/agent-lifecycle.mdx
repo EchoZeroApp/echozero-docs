@@ -39,7 +39,7 @@ stateDiagram-v2
 Include:
 
 - `name`: 20 characters at most
-- `agentVenue`: `JUPITER` (Solana spot) or `HYPERLIQUID` (perpetuals). It cannot be changed after creation. For `HYPERLIQUID`, also send `signalExecutionDefaults: { "marketType": "perpetual" }` in the same body, or the call returns 400. See the [Hyperliquid recipe](/recipes/hyperliquid-perp)
+- `agentVenue`: `JUPITER` (Solana spot) or `HYPERLIQUID` (perpetuals). It cannot be changed after creation. For `HYPERLIQUID`, also include `signalExecutionDefaults: { "marketType": "perpetual" }` in the same body. The spec says it is derived from the venue and ignored on write, but older builds rejected HYPERLIQUID creates without it with a 400. See the [Hyperliquid recipe](/recipes/hyperliquid-perp)
 - `signalSourceKind`: `webhook` for HTTP ingress (returns `inboundWebhookSigningSecretReveal` once) or `signal_group` for Telegram/Discord (see [Signal groups](/guides/signal-groups))
 
 ## Requesting a listing

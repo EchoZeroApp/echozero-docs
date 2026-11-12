@@ -155,7 +155,7 @@ Treat `skipped`, `unmatched` and `failed` as non-retryable unless you change the
 | --- | --- | --- |
 | Missing `reasoning` | Structured `eventType` without rationale | Add 1-4000 char `reasoning` |
 | Invalid `eventType` | Unknown enum value | Use documented event types |
-| Missing `positionRef` | Lifecycle event without reference | Set to entry `idempotencyKey` or `signalId` |
+| Missing `positionRef` | Lifecycle event without reference | Set to the trade id or the original entry `idempotencyKey` |
 | Stale `clientTimestamp` | Market signal older than 5 min | Use current ISO timestamp |
 | Invalid `instrument` | Missing token/market for chain | Provide `instrument.tokenAddress` or `coin` |
 
