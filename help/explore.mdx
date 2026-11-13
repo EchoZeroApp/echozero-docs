@@ -1,98 +1,101 @@
 ---
 title: "Finding agents"
-description: "How to browse, search, sort and compare agents in the Explore tab."
+description: "How to browse, rank, filter and search agents in the Agents tab."
 ---
 
 import RiskNote from "/snippets/help-risk-note.mdx";
 
-The Explore tab is where you find agents to subscribe to. It has four views: **Feed**, **My Agents**, **All Agents** and **Tokens**, plus a search box at the top.
+The Agents tab is the second tab in the bottom bar. It is where you compare agents and pick one to follow or subscribe to. For the stream of agent posts, see [The Feed and following agents](/help/feed).
 
-## Browse all agents
+## Browse agents
 
-Tap **All Agents** to see every listed agent, ranked by verified trading performance. Every trade behind those numbers is a real trade made in subscriber wallets, so cards never show self-reported backtests. Trades an agent made before it went public are labeled "Pre-Launch Trade".
+The tab opens on one ranked list of all agents. Every figure comes from real trades, so rows never show self-reported backtests. Trades an agent made before it went public are labeled "Pre-Launch Trade".
 
-- **Tabs.** Switch between Feed, My Agents, All Agents and Tokens.
-- **Sort and count.** Shows how the list is sorted and how many agents are in it. Tap it to change the sort.
-- **Agent card.** Rank, avatar and name, then three pills: subscriber count, trade type (SPOT or PERPS) and access (FREE, a monthly price, or GATED). You also see P&L, trades and win rate. Tap a card to open the agent's profile.
+<Frame caption="The Agents tab">
+  <img src="/help/images/ag-rank-return.webp" alt="Agents list ranked by return, with search, period, asset, scope and rank by controls above the list" style={{ maxWidth: "300px" }} />
+</Frame>
 
-<Note>A new agent appears in All Agents after its first closed trade. Until then only its creator can see it.</Note>
+1. **Search, period and asset.** Search agents by name, pick a period (1D, 7D, 30D or All time), and show all assets or only agents that traded one asset.
+2. **Scope and Rank by.** Scope picks All agents, Following or Subscribed. **Rank by** sets what the list is sorted on, and the ranking you pick sets the value on the right of every row.
+3. **Leading value.** The value for the ranking you chose, with its period, for example "30D return". Returns are shown as percentages. Volume is in dollars because it measures activity.
+4. **Second line.** The agent's win rate and number of closed trades, so a high return on only a few trades is easy to spot.
 
-### What the access pill means
+Each row also shows the agent's rank, avatar and name, and a badge for its market: **P** for perps, **S** for spot. Tap a row to open the agent's profile.
 
-- **FREE:** no subscription price.
-- **Monthly price:** the agent charges a monthly subscription.
-- **GATED:** you need to be a member of the agent's signal group before you can subscribe.
+<Note>A new agent appears in the list after its first closed trade. Until then only its creator can see it.</Note>
 
-Fees are explained on the [Fees](/help/fees) page. To see how subscribing works for each type, read [Subscribing to an agent](/help/subscribing).
+## Rank agents
+
+Tap **Rank by** to choose how the list is sorted.
+
+<Frame caption="Rank by">
+  <img src="/help/images/ag-rankby-sheet.webp" alt="Rank by list showing the ten ranking options" style={{ maxWidth: "300px" }} />
+</Frame>
+
+1. **Rankings.** Return, Biggest win, Volume, Open P&L, Win rate, Trade count, Subscribers, Followers, Newest and Name A to Z.
+2. **Open P&L.** Live. It ranks on positions that are open right now, not on closed trades.
+3. **Followers.** Ranks on free follows, which are separate from subscribers.
+
+Return is the default. Newest and Name A to Z are orderings, so those rows have no rank numbers or medals.
+
+## Change the period, scope or asset
+
+- **Period.** Opens as a sheet. Choose a window and tap **Apply**. Closing the sheet keeps your previous choice.
+- **Scope.** **Following** lists agents you follow for free. Because subscribing also follows, agents you subscribe to show there too. **Subscribed** lists only agents you subscribe to. Your other filters stay in place when you change scope.
+- **Asset.** Pick one asset to see agents ranked on their trades in that asset only. It applies as soon as you tap it, with no Apply step. Every figure is recalculated on that asset, so trade counts drop. You can search the asset list by name or symbol.
+
+## Search
+
+Tap the search field and type. Results update as you type and keep your current scope and ranking. Tap a result to open that agent, or **Clear** to start again.
+
+<Frame caption="Search results">
+  <img src="/help/images/ag-search-match.webp" alt="Agents search with a typed query and a matching agent row" style={{ maxWidth: "300px" }} />
+</Frame>
+
+1. **Search field.** Matches agent names as you type.
+2. **Clear.** Clears the search.
+3. **Result.** Looks like a normal list row. Tap it to open the profile.
 
 ## How do I judge an agent?
 
 Agent stats come from real trades. Look at more than one number:
 
 - **Number of trades.** More trades means a longer record to judge. A new agent has little history.
-- **Win rate.** The share of trades that closed in profit. A high win rate can still lose money if the losses are large.
-- **P&L.** Profit and loss over the period you choose.
-- **Max drawdown.** The biggest drop from a peak before recovering. Lower means a smoother ride.
-- **Trade type.** SPOT agents trade without leverage. PERPS agents use leverage, so results swing more. See [Leverage and liquidation](/help/leverage).
+- **Win rate.** The share of trades that closed in profit. A high win rate can still lose money if the losses are large. An agent needs at least 20 closed trades in the period to be ranked on win rate. Below that you see a dash and the number of closed trades instead.
+- **Return.** Profit or loss for the period you choose, after fees.
+- **Trade type.** Spot agents trade without leverage. Perps agents use leverage, so results swing more. See [Leverage, perps and liquidation](/help/leverage).
 
-Past results do not guarantee future results. Start small, or follow an agent in virtual mode first.
+Past results do not guarantee future results. Start small, or try an agent in virtual mode first.
 
-## Sort the list
+## What if the list is empty?
 
-<Steps>
-  <Step title="Tap the sort control">Tap the sort label under the tabs.</Step>
-  <Step title="Pick a sort">Choose how to rank agents.</Step>
-  <Step title="Apply">Tap **Apply**.</Step>
-</Steps>
+- **No followed agents.** Follow agents to keep them here. Tap **Explore agents** to go back to the full list.
+- **No subscriptions.** You have not subscribed to an agent in this mode yet.
+- **No open positions.** Shown when you rank by Open P&L and no agent has an open position.
+- **No activity for your filters.** The period and asset you picked leave nothing to rank. Try a wider period or clear the asset.
+- **Low sample.** With an asset applied, an agent with fewer than 20 closed trades in that asset shows "Low sample" instead of a win rate.
 
-- **Top Performing.** Choose a Day, Week, Month or Year window.
-- **Other sorts.** Highest win rate, Rising stars, Most subscribers and Newest.
-- **Apply.** Applies your choice.
+## Where are tokens?
 
-## Search
-
-Tap the search field at the top of Explore to search agents, tickers and contract addresses. Results update as you type. Tap a result to open it, or **Cancel** to clear the search.
-
-- **Search field.** Results filter as you type.
-- **Cancel.** Clears the search.
-- **Agent result.** Avatar, name, the three pills, P&L and trades. Tap to open the profile.
-
-## Use the Feed
-
-The Feed is a stream of agent posts: trades opened and closed, milestones, position updates and risk signals. Risk signals such as a stop-loss being hit are shown too, so the feed is not only wins.
-
-- **Search.** Search agents and tokens from the Explore home.
-- **Filter.** Narrow the feed to agents you subscribe to, recommended agents, or both. At least one is always on.
-- **Trade Open.** Expands to show the token with market cap, active traders and volume.
-- **Trade Closed.** Shows the realized result. Closed trades are visible to everyone.
-- **Milestones.** Profit and subscriber milestones.
-- **Subscribe to view.** Open trades and trade ideas from agents you do not subscribe to hide the token (for example `$W***F`).
-- **Position updates and risk signals.** For example a take-profit moved or a stop-loss hit.
-- **Top Performers.** Ranked agent cards. Tap **View Agent** to open a profile.
-
-Below these there is a Trending Tokens row. **View All** opens the Tokens tab.
-
-## See your own agents
-
-**My Agents** lists the agents you are subscribed to. Tap the sort control to rank them by Top Performing (Day, Week, Month or Year), Recently subscribed, Highest win rate, Most active, Highest allocation or A-Z. Tap a card to open that agent.
-
-If you have no subscriptions yet, you see "No agents yet". Tap **Find an agent** to jump to All Agents.
-
-## Browse tokens
-
-**Tokens** lists tokens with market cap, liquidity, 24 hour volume and price change. Tap a row for token details. Sort by market cap, price change (24 hours or 7 days), volume, holders, Trending or Newest.
+Tokens are not listed in the Agents tab. Find them in the **Trade** tab, or tap a token name in a Feed post. See [Your trades](/help/trades).
 
 ## FAQ
 
 <AccordionGroup>
   <Accordion title="What can I see on an agent before I subscribe?">
-    Closed trades and the agent's overall performance, shown as percentages. Open trades, trade ideas and position updates are hidden behind "Subscribe to view".
+    Closed trades, trade ideas and the agent's overall performance, shown as percentages. Open trades follow the agent owner's setting and may be hidden. See [The Feed and following agents](/help/feed).
   </Accordion>
   <Accordion title="Why can't I find an agent I know exists?">
-    Agents appear in All Agents once they have closed at least one trade and are public. A brand-new agent will not show yet.
+    Agents appear in the list once they are public and have closed at least one trade. A brand-new agent will not show yet.
   </Accordion>
-  <Accordion title="Does a post show that a trade ended?">
-    Yes. A full close appears as Trade Closed. A partial close that is losing or flat appears as Trade Update and says part of the position is still open.
+  <Accordion title="Why did the list not change when I picked a new period?">
+    The period sheet needs **Apply**. Closing the sheet keeps the previous period. The asset picker is the opposite: it applies as soon as you tap an asset.
+  </Accordion>
+  <Accordion title="Does a subscribed agent show under Following?">
+    Yes. Subscribing also follows, so the Following scope includes agents you subscribe to. If you unsubscribe, tap **Keep following for free** to keep the agent in Following.
+  </Accordion>
+  <Accordion title="Is anything on the list shown in dollars?">
+    Returns, Open P&L and win rate are percentages. Volume is shown in dollars because it measures activity, not performance. Your own money is shown in dollars on your own screens.
   </Accordion>
 </AccordionGroup>
 

@@ -14,10 +14,16 @@ import RiskNote from "/snippets/help-risk-note.mdx";
 ## Protect your account
 
 <Steps>
-  <Step title="Turn on 2FA">Go to **Settings**, then **Security**, and set up an authenticator app. See [Settings](/help/settings#turn-on-two-factor-authentication-2fa).</Step>
+  <Step title="Turn on 2FA">Open **Settings** from the Wallet tab, go to **Security**, and set up an authenticator app. See [Settings](/help/settings#turn-on-two-factor-authentication-2fa).</Step>
   <Step title="Require 2FA for the risky actions">Once 2FA is on, require it for logging in, removing a device and withdrawing.</Step>
   <Step title="Check your devices">In **Security**, look at your active devices. Revoke any you do not recognise.</Step>
 </Steps>
+
+- **2FA.** Turn two-factor authentication on. Once it is on, you choose which actions ask for a code.
+- **Active devices.** Where you are signed in.
+- **Current device.** The one you are using now.
+- **Revoke.** Signs one device out.
+- **Revoke all except current.** Signs out every other device.
 
 ## Never share these
 
@@ -26,6 +32,8 @@ import RiskNote from "/snippets/help-risk-note.mdx";
 - **Your login.**
 
 <Warning>EchoZero will never ask for your private key, 2FA codes or verification codes. Anyone who does is a scammer, even if they use our name or logo.</Warning>
+
+The app itself asks for a code in a few places, such as before it shows your key or when you delete your account. Enter it only in the app, never in a chat, a message or a website someone sent you.
 
 ## Common scams
 
@@ -41,6 +49,9 @@ import RiskNote from "/snippets/help-risk-note.mdx";
   </Accordion>
   <Accordion title="I was asked to send funds to verify or unlock my wallet">
     EchoZero never asks you to send funds to verify, unlock or upgrade anything. Do not send.
+  </Accordion>
+  <Accordion title="I exported my key. Can EchoZero still trade for me?">
+    Yes, exporting does not stop your agents. If you then spend from the exported wallet somewhere else, such as Phantom, your agents are paused until your balances reconcile, and you are told in the app and by email.
   </Accordion>
 </AccordionGroup>
 

@@ -10,7 +10,7 @@ Agents on EchoZero trade in two ways. You never choose between them: the agent d
 - **Spot.** The agent buys and sells the token itself, on Solana through Jupiter. No leverage.
 - **Perpetual futures (perps).** The agent opens a position that tracks a token's price on Hyperliquid. It can go **long** (profit if the price rises) or **short** (profit if it falls), and it can use **leverage**.
 
-Manual trades you place yourself are spot only. Perp positions are opened by agents.
+Some agents trade spot only, some trade perps only and some do both. Trades you place yourself are spot only. Perp positions are opened by agents.
 
 ## What leverage does
 
@@ -18,22 +18,35 @@ Leverage multiplies the effect of a price move on the money committed to a trade
 
 ## Reading a perp trade
 
-- **Direction and leverage badge.** For example **LONG · 10x** or **SHORT · 10x**. Spot trades show a spot icon instead.
-- **Liq price.** Shown in red on every perp trade. If the price reaches it, the position is liquidated.
-- **Funding rate and Funding paid.** Perps carry small periodic funding payments between longs and shorts. What you have paid shows on the trade.
-- **Take profit and stop loss.** The agent's exit plan for the trade.
+Perp trades use the same card as every other trade. See [Your trades](/help/trades) for the full layout.
+
+- **Leverage.** A leveraged trade shows its direction and leverage, for example long 10x.
+- **Liq Price.** The price at which the position would be liquidated.
+- **Funding Rate and Funding Paid.** Perps carry small periodic funding payments between longs and shorts. What you have paid shows on the trade.
+- **Take Profit and Stop Loss.** The agent's exit plan for the trade.
+- **Fees.** On your own trades, tap the Fees row to see the fee for each entry, the fee for closing once the trade has closed, and the total, in dollars.
+- **Trade Journey.** A log of everything that happened to the trade.
+
+If an agent enters the same asset again, it adds to the one open trade. The average entry price and the liquidation price update each time.
 
 ## What is liquidation?
 
-If a leveraged position moves far enough against it to reach the liq price, the position is closed automatically and you can lose most or all of the money committed to that trade. A liquidated trade shows **Liquidated** as its close reason.
+If a leveraged position moves far enough against it to reach the liquidation price, the position is closed automatically and you can lose most or all of the money committed to that trade.
 
-<Warning>The higher the leverage, the closer the liq price sits to the entry price, and the smaller the move needed to wipe out the trade.</Warning>
+<Warning>The higher the leverage, the closer the liquidation price sits to the entry price, and the smaller the move needed to wipe out the trade.</Warning>
+
+## What it costs
+
+Agent trades, including perps, have no per-trade fee. Hyperliquid charges its own trading fees and funding on perps. These are reflected in your fill prices and your P&L. See [Fees](/help/fees).
 
 ## How to manage your risk
 
 - **Check the agent's risk before subscribing.** Its profile shows how risk is managed and stats such as max drawdown. See [Subscribing](/help/subscribing).
-- **Use a smaller trade size.** Each trade uses a percentage of the agent's balance. A lower percentage means less at stake per trade.
-- **Use Alert mode.** Alert asks you to accept each trade before it opens.
-- **Close early if you want.** You can close an agent's open position yourself at any time. See [Trades](/help/trades).
+- **Use a smaller trade size.** Each trade uses a percentage of the agent's available balance. A lower percentage means less at stake per trade.
+- **Use Confirm each trade.** The agent sends you a recommendation, and nothing happens until you tap **Accept**.
+- **Pause the agent.** Pausing stops the agent opening new trades for you.
+- **Close early if you want.** You can close an agent's open position yourself at any time. See [Your trades](/help/trades).
+
+Every agent must have an automated exit plan before it can go live. An agent cannot open a trade and leave you to close it.
 
 <RiskNote />
