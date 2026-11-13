@@ -1,23 +1,25 @@
 ---
 title: "Settings and security"
-description: "Manage your account, 2FA, keys, subscriptions and notifications, send feedback, or delete your account."
+description: "Manage your account, 2FA, keys, subscriptions and notifications, send feedback, log out, or delete your account."
 ---
 
 import RiskNote from "/snippets/help-risk-note.mdx";
 
-Open your profile and tap the gear to reach Settings. Everything about your account starts here.
+Open **Settings** from the Wallet tab. Everything about your account starts here.
+
+The menu has these rows, top to bottom:
 
 - **General.** Profile image, username, email and language.
-- **Wallet, Export keys.** Export your Solana private key to use in Phantom.
+- **Wallet.** Wallet controls, including Export keys.
+- **Withdraw.** Opens the withdraw flow. See [Wallet](/help/wallet#withdraw-usdc).
 - **Security.** Two-factor authentication and your signed-in devices.
-- **Notifications.** Push and email preferences.
-- **Submit feedback.** Report a bug or suggest a feature.
-- **Subscriptions.** View and cancel your agent subscriptions.
-- **Help.** Where to get support.
+- **Notification**, **Connections**, **Feedback**, **Subscriptions** and **Log out**.
+
+At the bottom are **Help**, where you get support, and the **virtual trade** switch, which moves the app between virtual and real trading.
 
 ## General
 
-In **General** you can add or remove a profile picture (5MB max) and see your username and email. You can also change the app language. Tap **Save** to keep your changes. This is also where you start [account deletion](#delete-your-account).
+In **General** you can add or remove a profile picture (5MB max, PNG or JPG) and see your username and email. You can also change the app language. Tap **Save** to keep your changes. This is also where you start [account deletion](#delete-your-account).
 
 ## Turn on two-factor authentication (2FA)
 
@@ -30,10 +32,15 @@ In **General** you can add or remove a profile picture (5MB max) and see your us
 
 Once 2FA is on, you can require it for specific actions: logging in, removing a device and withdrawing tokens. You can turn 2FA off from the same screen.
 
-- **2FA status.** Whether two-factor authentication is on.
-- **Per-action requirements.** Choose which actions ask for a 2FA code.
-- **Disable 2FA.** Turns 2FA off.
-- **Active devices.** See where you are signed in. Revoke a device, or all except the one you are using.
+<Frame caption="Security">
+  <img src="/help/images/st-security.webp" alt="Security screen with the two-factor authentication control and the list of active devices" style={{ maxWidth: "300px" }} />
+</Frame>
+
+1. **2FA.** Turn it on and choose which actions ask for a code.
+2. **Active devices.** See where you are signed in.
+3. **Current device.** The one you are using now.
+4. **Revoke.** Signs one device out.
+5. **Revoke all except current.** Signs out every other device.
 
 ## Export your keys
 
@@ -41,45 +48,69 @@ Your wallet is yours. You can export your Solana private key at any time and imp
 
 <Steps>
   <Step title="Open Export keys">Go to **Settings**, then **Wallet** and **Export keys**.</Step>
-  <Step title="Verify it is you">Complete the verification step the app asks for.</Step>
+  <Step title="Verify it is you">We email you a code. Enter it in the app. It opens a 2-minute window to export your key.</Step>
   <Step title="Reveal and copy">Tap the box to show your key, then copy it. Tap **CLOSE** when you are done.</Step>
 </Steps>
 
-- **Export private key.** Take your Solana key to Phantom.
 - **Safety warning.** Never share your key. Anyone with it can control the wallet.
 - **Reveal note.** Tap the box to show the key, and make sure nobody can see your screen.
 - **The key.** Hidden until you tap it. Copy it to your clipboard.
+
+Your wallet can only be recovered using its private key, so keep a copy somewhere only you can reach.
+
+Exporting does not stop your agents from trading. If you then spend from the exported wallet somewhere else, your agents are paused until your balances reconcile, and you are told in the app and by email.
 
 <Warning>Anyone with your private key can take your funds. Never share it.</Warning>
 
 ## Manage your subscriptions
 
-Go to **Settings**, then **Subscriptions**. Each paid agent you subscribe to shows its monthly price, success fee and next payment date.
+Go to **Settings**, then **Subscriptions**. Each paid agent you subscribe to shows its price and next payment date.
 
 - **Cancellation terms.** Access continues until the paid period ends. There is no pro-rated refund.
-- **Subscription card.** Price, success fee and next payment date for one agent.
 - **CANCEL.** Cancel that one agent.
 - **Cancel all agent subscriptions.** Cancel every subscription at once.
 
-When you cancel, you choose what happens to the agent's open trades. **Keep them open** is the default. Your trades stay open and you can close them from your wallet whenever you like. **Close all trades** exits every open position at market. You can re-subscribe at any time.
+When you cancel, you choose what happens to the agent's open trades. **Keep them open** is the default. Your trades stay open and you can close them from your wallet whenever you like. **Close all trades** exits every open position at market. After you cancel, you can choose **Keep following for free**. You can re-subscribe at any time.
 
 Cancelling settles any success fee due on profit above your all-time high with that agent. See [Fees](/help/fees) and [Subscribing](/help/subscribing).
 
 ## Notifications
 
-Go to **Settings**, then **Notifications**. Choose what you get as push and as email. Each category has its own switch.
+Go to **Settings**, then **Notification**. You get a grid with a **Push** and an **Email** switch for each category.
 
-- **Push notifications.** Alerts on your device, by category.
-- **Categories.** News and offers, Tips and help, Trade execution, Agent updates.
-- **Email notifications.** The same categories by email. Your weekly settlement receipt arrives here too.
-- **Always on.** Verification codes, deposit and withdrawal confirmations and critical alerts always send.
+- **Trade activity.** Every trade your agents open and close.
+- **Bundle into a daily summary.** One recap a day instead of a notification per trade.
+- **Rewards and XP.** Tier changes, rakeback, referrals and leaderboards.
+- **Product news.** New features, offers and community updates.
+- **Tips and help.** Getting started and suggestions based on how you use the app.
+- **Always on.** Some things cannot be turned off because they affect your money, your access or your security: trade approvals, money in and out (deposits, withdrawals and success fee receipts), and security and account messages such as new sign-ins and verification codes. See [Inbox](/help/inbox).
+
+## Connections
+
+**Connections** is where you link your Telegram and Discord accounts.
 
 ## Send feedback
 
-Go to **Settings**, then **Submit feedback**.
+Go to **Settings**, then **Feedback**.
 
-- **Report a bug.** Add the details and submit. You are notified as it progresses.
+- **Report a bug.** Add the details and a screenshot if you like (5MB max, PNG or JPG), then submit. You are notified as it progresses.
 - **Feature request.** Submit an idea with a title and description.
+
+## Get help
+
+Tap **Help** in Settings. It opens a chat that starts with a bot and can hand you over to the support team. You can also reach us in Discord or at hello@echozero.app.
+
+## Log out
+
+Tap **Log out**. The screen shows your username and a shortened wallet address. Swipe the slider to confirm.
+
+<Frame caption="Log out">
+  <img src="/help/images/st-logout.webp" alt="Log out screen with the username, a shortened wallet address and a swipe to log out slider" style={{ maxWidth: "300px" }} />
+</Frame>
+
+1. **Account.** The username you are logging out of.
+2. **Wallet address.** Shortened, so you can check which account it is.
+3. **Swipe to log out.** Slide to confirm.
 
 ## Delete your account
 
@@ -91,10 +122,15 @@ Deleting your account cannot be undone in the app. EchoZero may keep some record
   <Step title="Confirm">Tick the box to confirm you understand the data loss, then tap **Verify** and finish the final step.</Step>
 </Steps>
 
-- **Warning.** Account deletion cannot be reversed in the app, and some records may be kept where required.
-- **Verification code.** The 6-digit code from your email.
-- **Confirm checkbox.** Acknowledge the permanent data loss.
-- **Verify.** Moves you to the final step.
+<Frame caption="Delete account">
+  <img src="/help/images/st-delete.webp" alt="Delete account screen with a warning, a 6-digit code field, a resend link, a confirmation checkbox and a Verify button" style={{ maxWidth: "300px" }} />
+</Frame>
+
+1. **Warning.** Deleting an account cannot be reversed.
+2. **Code.** The 6-digit code from your email.
+3. **Resend.** Sends the code again.
+4. **Confirm checkbox.** Acknowledge that your personal data is permanently deleted.
+5. **Verify.** Moves you to the final step.
 
 Need help? Tap **Help** in Settings, or see [Troubleshooting](/help/troubleshooting).
 
