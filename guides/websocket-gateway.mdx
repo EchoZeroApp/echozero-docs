@@ -24,7 +24,16 @@ Pass your developer API key in the Socket.IO handshake:
 
 Connection-level HMAC is **not** used on WebSocket. REST API-key requests require request signing; protect credentials in transit (TLS only).
 
-On success the server emits `authenticated` (`{ "ok": true }`). Invalid or missing keys receive an `error` event (`{ "message": "Invalid or expired API key" }`) and are disconnected.
+Only a developer **API key** is accepted. Bearer tokens, OAuth tokens and `Authorization` headers are not read on this gateway. The handshake takes `x-api-key` first, then `auth.apiKey`.
+
+On success the server emits `authenticated` (`{ "ok": true }`). Wait for it before you emit `signal`; a signal sent earlier gets `signal:error` with `Not authenticated`. If authentication fails the server emits `error` with one of the messages below and then disconnects the socket:
+
+| `error` message | Cause |
+| --- | --- |
+| `Missing API key` | Neither `x-api-key` nor `auth.apiKey` was sent |
+| `Invalid or expired API key` | Key not found, revoked or expired |
+| `Read-only admin keys cannot send signals` | The key is a read-only admin key |
+| `Authentication failed` | Unexpected failure while checking the key |
 
 ## Send a signal
 
@@ -44,20 +53,27 @@ Emit event `signal`. Every payload needs `developerAgentId` (one of your agents)
 }
 ```
 
-The legacy minimal shape `{ "developerAgentId", "action": "buy" | "sell", "tokenAddress", "amount" }` is also accepted.
+The legacy minimal shape `{ "developerAgentId", "action": "buy" | "sell", "tokenAddress", "amount" }` is also accepted, with optional `idempotencyKey`, `urgency`, `metadata`, `reasoning`, `context` and `confidence`. The server uses the structured path when the payload carries the structured trade fields, and the legacy path otherwise. `developerAgentId` is removed from the payload before the envelope is validated.
+
+`signal` is the only event the server accepts from clients.
 
 <Warning>
 Natural-language `text` signals (for example `"BUY SOL $100"`) are **not** parsed on the WebSocket gateway and are rejected with `Missing required fields`. Send `text` signals to the [HTTP inbound webhook](/guides/webhook-security) instead.
 </Warning>
 
-## Responses
+## Events
 
-| Event | Payload | Meaning |
-| --- | --- | --- |
-| `authenticated` | `{ "ok": true }` | API key accepted; you can emit signals |
-| `error` | `{ "message" }` | Connection auth failed; the socket is then disconnected |
-| `signal:received` | `{ "signalId", "status", "executionResult"? }` | Signal ingested. `executionResult` has `success`, `txHash`, `executedAmountUsd`, `errorMessage` when execution ran inline |
-| `signal:error` | `{ "message" }` | Signal rejected (validation, missing `developerAgentId`, not authenticated) |
+Namespace `/ws/signals`. CORS allows any origin.
+
+| Direction | Event | Payload | Meaning |
+| --- | --- | --- | --- |
+| Server to client | `authenticated` | `{ "ok": true }` | API key accepted; you can emit signals |
+| Server to client | `error` | `{ "message" }` | Connection auth failed (messages above); the socket is then disconnected |
+| Client to server | `signal` | Envelope plus `developerAgentId` | Submit one signal |
+| Server to client | `signal:received` | `{ "signalId", "status", "executionResult"? }` | Signal ingested. `executionResult` has `success`, `txHash`, `executedAmountUsd`, `errorMessage` when execution ran inline |
+| Server to client | `signal:error` | `{ "message" }` | Signal rejected. The socket stays connected |
+
+Common `signal:error` messages: `Not authenticated`, `Missing developerAgentId`, `Missing required fields: developerAgentId, action, tokenAddress` (also what a `text`-only signal returns), `action must be "buy" or "sell"`, `Invalid ID format: ...`, `You must be a registered developer`, `Developer agent not found or you do not own it`, `Agent has been deleted`, `Agent is paused; new signals are not accepted.`, plus the validation message for structured envelopes (the same checks as the [signal envelope](/guides/signal-envelope) rules). Any other failure returns the error text, or `Signal processing failed`.
 
 Responses are **not correlated** to requests (there is no request id or ack callback). Use `idempotencyKey` on every signal and match on the returned `signalId`.
 
