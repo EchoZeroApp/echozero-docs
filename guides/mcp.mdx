@@ -25,7 +25,7 @@ Send credentials on **every** MCP request, including the first `initialize`:
 - `x-api-key: <developer_api_key>`, or
 - `Authorization: Bearer <access_token>` (API key or [OAuth token](/guides/oauth))
 
-MCP accepts OAuth bearer tokens, which need no request signing. How an API key behaves on MCP is being confirmed: REST calls with an API key need `x-timestamp` and `x-signature` (see [API keys + HMAC](/guides/api-keys-hmac)), but do not rely on either behaviour for MCP yet. Use an OAuth token if you want a documented path.
+On `/mcp`, an API key alone authenticates the request. You do not send `x-timestamp` or `x-signature`; the MCP server signs its own downstream REST calls for you. OAuth bearer tokens also need no signing. Treat your API key like a password: anyone who holds it can call MCP with that key's scopes. Direct REST calls under `/api/...` are different: they still require HMAC signing (see [API keys + HMAC](/guides/api-keys-hmac)).
 
 A request with no credential gets a JSON-RPC error, not the REST envelope:
 
@@ -63,11 +63,30 @@ Response headers may also include `X-Mcp-Instance-Id` for load-balancer sticky r
 
 ## Example `initialize` request
 
-The examples use an OAuth access token (`OAUTH_TOKEN`, from the [OAuth flow](/guides/oauth) or `npx @echozero/ez login`), which needs no request signing. API-key behaviour on MCP is being confirmed, so prefer the OAuth token. The signing rules for REST are in [API keys and HMAC](/guides/api-keys-hmac).
+The examples use an OAuth access token (`OAUTH_TOKEN`, from the [OAuth flow](/guides/oauth) or `npx @echozero/ez login`). An API key works the same way: swap the auth header for `-H "x-api-key: $EZ_API_KEY"`, with no signing headers. The signing rules for REST are in [API keys and HMAC](/guides/api-keys-hmac).
 
 ```bash
 curl -sS https://mcp.echozero.app/mcp \
   -H "Authorization: Bearer $OAUTH_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "initialize",
+    "params": {
+      "protocolVersion": "2025-03-26",
+      "capabilities": {},
+      "clientInfo": { "name": "my-client", "version": "1.0.0" }
+    }
+  }'
+```
+
+Using an API key instead of OAuth (no signature needed on `/mcp`):
+
+```bash
+curl -sS https://mcp.echozero.app/mcp \
+  -H "x-api-key: $EZ_API_KEY" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
   -d '{
