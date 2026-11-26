@@ -4,12 +4,12 @@ description: Authenticate REST and MCP requests with API keys and required reque
 ---
 
 <Note>
-Every call authenticated with an API key needs `x-api-key`, `x-timestamp` and `x-signature`. Sending only `x-api-key` returns 401. The `ezs_` secret is not optional.
+Every REST call (`/api/...`) authenticated with an API key needs `x-api-key`, `x-timestamp` and `x-signature`. Sending only `x-api-key` returns 401. The `ezs_` secret is not optional for REST. The MCP endpoint `/mcp` is the exception: an API key alone authenticates it (see [MCP authentication](#mcp-authentication)).
 </Note>
 
 ## API key authentication
 
-Send your developer API key on every authenticated request in either header, **together with the signing headers** described below:
+Send your developer API key on every authenticated REST request in either header, **together with the signing headers** described below:
 
 ```bash
 x-api-key: ez_live_...
@@ -17,7 +17,7 @@ x-api-key: ez_live_...
 Authorization: Bearer ez_live_...
 ```
 
-On its own, either header returns 401. The complete signed requests are in the `ez` helper and the curl examples further down. Do not copy a bare key-only request.
+On its own, either header returns 401 on REST `/api/...` routes. The complete signed requests are in the `ez` helper and the curl examples further down. Do not copy a bare key-only request.
 
 Create and revoke keys in the [Dev Portal](https://devportal.echozero.app). Each key has scoped permissions - request only the scopes your integration needs.
 
@@ -184,4 +184,4 @@ const headers = await signRestRequest({
 
 ## MCP authentication
 
-API keys (with required HMAC) work on `POST https://mcp.echozero.app/mcp` the same way as REST. Send `x-api-key` or `Authorization: Bearer` on every MCP call, including `initialize`. See the [MCP Server guide](/guides/mcp).
+On `POST https://mcp.echozero.app/mcp` an API key alone authenticates the request: send `x-api-key` or `Authorization: Bearer` on every MCP call, including `initialize`, with no `x-timestamp` or `x-signature`. The MCP server signs its own downstream REST calls. Treat the key like a password. Direct REST calls under `/api/...` still require HMAC as described above. See the [MCP Server guide](/guides/mcp).
