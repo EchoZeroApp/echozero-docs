@@ -92,20 +92,20 @@ ez POST /api/v1/wallet/virtual/add-funds '{ "amountInUsdc": 1000 }'
 
 Virtual trades use simulated balances - no on-chain execution. `amountInSol` is deprecated; use `amountInUsdc`.
 
-## 4. Portal demo signals
+## 4. What you can and cannot dry-run
 
-To record a demo signal row for an agent (isolated from live subscriber execution), use the route below. It is not in the public API spec, so its body is undocumented. The `developerAgentId` field name here is unconfirmed (other material may call it `agentId`). Treat this call as unsupported and prefer the sandbox endpoints above:
+Use `POST /api/sandbox/agents/{id}/signals/simulate` (section 2) for dry-run signals. It takes a JSON body with one field, `message`, a plain-text signal such as `"Buy SOL at $145, TP $160, SL $138"`. It parses the text, uses the agent's signal detection rule when one is configured, and records the result in sandbox history. It never executes.
+
+<Warning>
+The simulate route accepts plain-text `message` only. Structured [signal envelopes](/guides/signal-envelope) (`eventType`, `reasoning`, `idempotencyKey` and so on) cannot be dry-run yet. To exercise a structured envelope end to end, switch to the virtual wallet (section 3) first so nothing real executes.
+</Warning>
+
+Signals that were actually ingested (inbound webhook or WebSocket) are listed by the developer signals API. This is a read-only history of real signals, not a way to create demo ones:
 
 ```bash
-ez POST /api/dev/trade-signals '{
-  "developerAgentId": "'"$AGENT_ID"'",
-  "action": "buy",
-  "tokenAddress": "So11111111111111111111111111111111111111112",
-  "amount": 100
-}'
+ez GET "/api/developers/signals"
+ez GET "/api/developers/signals/$SIGNAL_ID"
 ```
-
-Demo signals appear in developer signal history but do not trigger the live trade bridge.
 
 ## 5. Test inbound webhook signing
 
