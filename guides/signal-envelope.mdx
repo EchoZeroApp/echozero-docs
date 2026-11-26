@@ -343,7 +343,7 @@ Standard MCP envelope. Typical `data` fields:
 | --- | --- | --- |
 | Inbound HTTP webhook | Per-agent HMAC | This guide |
 | WebSocket `/ws/signals` | Developer API key | Same #1098 schema |
-| `POST /api/dev/trade-signals` | Developer API key | Portal sandbox only, no live bridge. Not in the public spec |
+| `POST /api/sandbox/agents/{id}/signals/simulate` | Developer API key + HMAC | Dry run of plain-text `{ "message" }` only. Structured envelopes cannot be dry-run yet. See the [sandbox guide](/guides/sandbox) |
 | Telegram / Discord | Provider webhook secrets | Platform-managed parsing |
 
 ## Outbound execution callbacks
