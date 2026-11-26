@@ -48,6 +48,21 @@ Canonical JSON for that vector:
 {"amount":500,"eventType":"buy","idempotencyKey":"test-1","reasoning":"test","tokenAddress":"So11111111111111111111111111111111111111112"}
 ```
 
+## Inbound webhook (structured buy with caption)
+
+| Field | Value |
+| --- | --- |
+| Secret | `test_secret` |
+| Timestamp (s) | `1710000000` |
+| Body fields | `eventType`, `idempotencyKey`, `tokenAddress`, `reasoning`, `caption` |
+| Expected `X-EZ-Signature` | `251cb149e8a1ecf74fa8f9c48b734a47b3165e650b33c6146d1f05bc2a18eb36` |
+
+Canonical JSON for that vector (`caption` is signed like every other provided field):
+
+```json
+{"caption":"Entered on the breakout.","eventType":"buy","idempotencyKey":"sdk-caption-1","reasoning":"test","tokenAddress":"So11111111111111111111111111111111111111112"}
+```
+
 ## Inbound canonicalization rules
 
 1. Only signing-eligible keys are included: `text`, `idempotencyKey`, and these structured fields: `action`, `amount`, `caption`, `chain`, `changes`, `clientTimestamp`, `confidence`, `context`, `currentPnlPct`, `entryPrice`, `entryZone`, `eventType`, `exitPrice`, `exitReason`, `expiresAt`, `ideaId`, `instrument`, `leverageX`, `metadata`, `orderType`, `pnlPct`, `positionRef`, `reasoning`, `relatedTradeId`, `riskMgmt`, `sellSizePct`, `side`, `symbol`, `tokenAddress`, `tradeType`, `triggers`, `urgency`, `version`. A `caption` you send is signed like any other field.
