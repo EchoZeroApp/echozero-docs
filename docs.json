@@ -86,6 +86,7 @@
               "guides/signal-grammar",
               "guides/websocket-gateway",
               "guides/webhook-security",
+              "guides/execution-callbacks",
               "guides/signature-test-vectors",
               "guides/sandbox",
               "guides/agent-lifecycle",

@@ -1,0 +1,91 @@
+---
+title: Execution callbacks
+description: Set the https URL on your server that receives signed signal.execution results, and verify each delivery.
+---
+
+An execution callback is a URL on **your** server. After EchoZero tries to execute one of your agent's signals, it POSTs the result there. Use it to confirm fills, log failures or update your own state.
+
+It is not where you send signals. To send signals to EchoZero, use the agent's `inboundSignalsHttpUrl` (see [Webhook security](/guides/webhook-security#inbound-agent-http-signals)).
+
+## Endpoints
+
+Both routes need an API key with the `write:agents` scope (signed requests, see [API keys and HMAC](/guides/api-keys-hmac)) and work for the **agent owner only**. Each returns the updated agent. The URL is stored on the agent as `inboundWebhookUrl`. The name is historical: despite it, this is where EchoZero sends results to you.
+
+| Method and path | What it does |
+| --- | --- |
+| `PUT /api/v1/agents/{id}/execution-callback` | Sets the callback URL. Body: `{ "url": "https://..." }` (up to 2048 characters) |
+| `DELETE /api/v1/agents/{id}/execution-callback` | Removes the URL. Deliveries stop |
+
+`POST /api/v1/agents` and `PATCH /api/v1/agents/{id}` accept the same URL in `inboundWebhookUrl` and apply the same checks.
+
+```bash
+ez PUT "/api/v1/agents/$AGENT_ID/execution-callback" '{ "url": "https://hooks.example.com/echozero" }'
+ez DELETE "/api/v1/agents/$AGENT_ID/execution-callback"
+```
+
+The `ez` helper is defined in [API keys and HMAC](/guides/api-keys-hmac#signed-request-helper).
+
+| Status | Meaning |
+| --- | --- |
+| 200 | Updated agent |
+| 400 | The URL is not a public https URL (see the rules below) |
+| 401 | Missing or invalid API key |
+| 429 | Rate limit exceeded |
+
+## URL rules
+
+<Warning>
+The callback URL must use **https**. A plain `http://` URL is rejected with 400.
+</Warning>
+
+- https only.
+- No credentials in the URL (`https://user:pass@host/...` is rejected).
+- Public hosts only. A host that is, or resolves to, a private, loopback or link-local address is rejected, for example `localhost`, `10.x.x.x`, `192.168.x.x` or `169.254.169.254`. For local development, expose your handler through a public https tunnel.
+- Redirects are **not followed**. Give the final URL, not one that redirects.
+- The check runs again at delivery time. A stored URL that is http or points at a private address stops receiving deliveries, with no error shown to you.
+
+## What you receive
+
+EchoZero sends a single `POST` per result with a 10 second timeout and no retries. The body is the `signal.execution` event described in [Webhook security](/guides/webhook-security#outbound-execution-webhooks).
+
+| Header | Description |
+| --- | --- |
+| `x-echozero-timestamp` | Same ISO timestamp as the payload `timestamp` field |
+| `x-echozero-signature` | Lowercase hex `HMAC-SHA256(secret, timestamp + "." + rawJsonBody)` |
+
+The secret is your **developer API key secret** (`ezs_...`), the same one you use to sign REST requests. Setting a callback creates no new secret.
+
+## Verify a delivery
+
+Verify against the raw request body, before any JSON parsing. Reject timestamps more than 5 minutes old and treat repeat `signalId` values as duplicates.
+
+```typescript
+import { verifyOutboundWebhook } from '@echozero/sdk';
+
+const ok = await verifyOutboundWebhook({
+  secretKey: process.env.EZ_SECRET!,
+  rawBody, // the exact request body string
+  timestamp: req.headers['x-echozero-timestamp'] as string,
+  signature: req.headers['x-echozero-signature'] as string,
+});
+if (!ok) return res.status(401).end();
+```
+
+```python
+import hmac, hashlib
+
+def verify(secret: str, raw_body: bytes, timestamp: str, signature: str) -> bool:
+    expected = hmac.new(
+        secret.encode(), f"{timestamp}.{raw_body.decode()}".encode(), hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(expected, signature.lower())
+```
+
+## Set it with the SDK
+
+```typescript
+await client.setExecutionCallback(agentId, 'https://hooks.example.com/echozero');
+await client.clearExecutionCallback(agentId);
+```
+
+Python uses `set_execution_callback` / `clear_execution_callback`, Go `SetExecutionCallback` / `ClearExecutionCallback`, and Rust `set_execution_callback` / `clear_execution_callback`. Available from SDK 0.2.1. See the [SDK guide](/guides/sdk).

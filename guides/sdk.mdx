@@ -240,6 +240,15 @@ const ok = await verifyOutboundWebhook({
 });
 ```
 
+## Execution callback
+
+From 0.2.1 the clients set and clear the URL that receives `signal.execution` results. The URL must be https and a public host. See [Execution callbacks](/guides/execution-callbacks).
+
+```typescript
+await client.setExecutionCallback(agentId, 'https://hooks.example.com/echozero');
+await client.clearExecutionCallback(agentId);
+```
+
 ## Postman collection
 
 Every public REST and MCP endpoint, ready to import. 182 requests across 24 folders.

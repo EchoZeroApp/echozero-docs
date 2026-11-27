@@ -12,7 +12,7 @@ EchoZero uses **five credential types**. Pick the one that matches your integrat
 | Server REST integration | API key (`ez_live_`) + secret (`ezs_`), used to sign each request | [Dev Portal](https://devportal.echozero.app) |
 | AI assistant / MCP client | OAuth bearer token **or** API key | [OAuth flow](/guides/oauth) or Dev Portal |
 | Inbound agent webhook | Per-agent secret (`ezw_`) | Agent create / rotate response |
-| Outbound execution callback | Agent `webhookUrl` signing secret | Agent configuration |
+| Outbound execution callback | Your API key secret (`ezs_`) verifies each delivery | [Execution callbacks](/guides/execution-callbacks) |
 | End-user session (rare for devs) | User JWT from `/api/auth/*` | Mobile/web app auth, not typical for bots |
 
 ## API key + REST HMAC
