@@ -141,11 +141,11 @@ Golden vectors: [Signature test vectors](/guides/signature-test-vectors).
 
 ## Outbound execution webhooks
 
-When your agent has a `webhookUrl`, EchoZero POSTs execution results after trade attempts.
+When your agent has an execution callback URL, EchoZero POSTs execution results after trade attempts. Set the URL with `PUT /api/v1/agents/{id}/execution-callback`. It must be **https** and a public host. See [Execution callbacks](/guides/execution-callbacks).
 
 ### Signing secret
 
-Use the **agent webhook signing secret** configured on the agent (`webhookUrl` + secret pair). Rotate by updating the agent record in Dev Portal or `PATCH /api/v1/agents/{id}`.
+Deliveries are signed with your **developer API key secret** (`ezs_...`), the one you use for [REST signing](/guides/api-keys-hmac). Setting a callback URL creates no new secret. To rotate, create a new API key in the Dev Portal and revoke the old one.
 
 ### Delivery contract
 
@@ -153,6 +153,7 @@ Use the **agent webhook signing secret** configured on the agent (`webhookUrl` +
 | --- | --- |
 | Method | `POST` |
 | Timeout | **10 seconds** |
+| Redirects | **Not followed** |
 | Retries | **None** (single attempt; implement idempotent handling on your side) |
 | Events | `signal.execution`, `signal.execution.failed` |
 
@@ -185,7 +186,7 @@ Headers:
 | Header | Description |
 | --- | --- |
 | `x-echozero-timestamp` | Same ISO timestamp as payload `timestamp` field |
-| `x-echozero-signature` | `HMAC_SHA256(webhookSecret, timestamp + "." + rawJsonBody)` |
+| `x-echozero-signature` | `HMAC_SHA256(apiKeySecret, timestamp + "." + rawJsonBody)` |
 
 ```python
 import hmac, hashlib
@@ -237,7 +238,7 @@ Do **not** use REST API HMAC headers (`x-signature` / `x-timestamp`) on inbound 
 ## Security checklist
 
 - Store signing secrets in a secrets manager - they are shown only once at creation/rotation.
-- Use HTTPS for all webhook URLs.
+- Use HTTPS for all webhook URLs. Execution callback URLs must be https and public: http, credentials in the URL and private or internal hosts are rejected.
 - Enforce timestamp windows on every inbound webhook you receive.
 - Deduplicate by `idempotencyKey` (inbound) or `signalId` (outbound).
 - Rotate compromised secrets via `rotateInboundWebhookSigningSecret` or API key revocation in the Dev Portal.

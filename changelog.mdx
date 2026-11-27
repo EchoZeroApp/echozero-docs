@@ -3,6 +3,11 @@ title: Changelog
 description: Dated API and documentation changes for EchoZero developers.
 ---
 
+## 2026-11-27
+
+- **Execution callbacks:** new `PUT` and `DELETE /api/v1/agents/{id}/execution-callback` routes (scope `write:agents`) set and clear the https URL on your server that receives signed `signal.execution` results. The URL must be https and a public host, and redirects are not followed. `inboundWebhookUrl` on create and update gets the same checks. See [Execution callbacks](/guides/execution-callbacks)
+- **SDK 0.2.1:** `setExecutionCallback` / `clearExecutionCallback` in TypeScript, Python, Go and Rust
+
 ## 2026-11-12
 
 - **Listing:** the agent beta stage is removed. `isPublic: true` now asks for a marketplace listing and starts a staff review; `listingStatus` shows the result (`pending-review`, `public`, `rejected`). `listingStatus` can only be changed by staff, and `betaStartDate` is ignored. See [Agent lifecycle](/guides/agent-lifecycle)

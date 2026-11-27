@@ -348,4 +348,4 @@ Standard MCP envelope. Typical `data` fields:
 
 ## Outbound execution callbacks
 
-When you set `webhookUrl` on an agent, EchoZero POSTs `signal.execution` events to your server after trade attempts. This is separate from inbound signing - see [Webhook security](/guides/webhook-security).
+When you set an execution callback URL on an agent, EchoZero POSTs `signal.execution` events to your server after trade attempts. The URL must be https and a public host. Set it with `PUT /api/v1/agents/{id}/execution-callback` (see [Execution callbacks](/guides/execution-callbacks)). This is separate from inbound signing - see [Webhook security](/guides/webhook-security).
